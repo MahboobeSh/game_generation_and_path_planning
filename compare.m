@@ -13,15 +13,16 @@ color7 = [255, 120, 0] / 255;   % Orange color (#FF7800)
 color8 = [57, 226, 213] / 255;  % Aqua color (#39E2D5)
 color9 = [8, 61, 119] / 255;    % Navy blue color (#083D77)
 
-for k = 1:15
+for k = 1:10
 
     step_size = 0.125;
-    m =8;
+    m =4;
 
     % Load the data from the .mat file
     set_number = k;
+    pairs_number =4;
     base_folder = 'C:\Users\mahbo\OneDrive - University of Calgary\code\game_creation_and_fits';
-    set_name = sprintf('set_%d.mat', set_number);
+    set_name = sprintf('set_%d_%dpairs.mat', set_number, pairs_number);
     fullFileName = fullfile(base_folder, set_name);
     data = load(fullFileName);
 
@@ -281,7 +282,7 @@ curve_segment_points = calculate_curve_segment_points(variables_matrix, Start_po
     % Text coordinates and properties need to be adjusted based on figure dimensions and preference
     hold off;
     legend;
-    filename = ['figure_set_' num2str(set_number) '_Astr_avoid_stepsize_' num2str(step_size) '_m_' num2str(m) '.png'];
+    filename = ['figure_set_' num2str(set_number) '_' num2str(pairs_number) 'pairs_Astr_avoid_stepsize_' num2str(step_size) '_m_' num2str(m) '_2.png'];
     print(filename, '-dpng');
 
     path = dynamic_path;
@@ -356,7 +357,7 @@ function h = heuristic_max_dist(point, goal, obstacles, obstacle_radii)
     end
 
     % Apply a penalty based on proximity to obstacles
-    penalty_weight = 3; % Adjust this weight to balance the influence
+    penalty_weight = 10; % Adjust this weight to balance the influence
     if min_dist_to_obstacle > 0
         penalty = penalty_weight / (1+min_dist_to_obstacle);
     else
