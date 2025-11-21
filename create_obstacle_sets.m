@@ -4,22 +4,23 @@ x_range = 48;
 y_range = 27;
 x_scaled = 0.85*x_range;
 y_scaled = 0.85*y_range;
-number_of_pairs = 3;
+number_of_pairs = 5;
 max_distance = sqrt(x_range^2 + y_range^2);
 output_folder = "C:\Users\mahbo\OneDrive - University of Calgary\code\game_creation_and_fits";
 % min_distance_between_obstacles = 0.12*sqrt((x_range/number_of_pairs)^2 + (y_range/number_of_pairs)^2)
 % max_distance_between_obstacle_pairs = 1.25*min_distance_between_obstacles
 % min_distance_to_end_and_start =  0.5*sqrt(x_range^2 + y_range^2)/number_of_pairs;
 % min_distance_middle_points = min_distance_to_end_and_start;
-min_distance_between_obstacles = 0.03* max_distance +  0.025*(max_distance/number_of_pairs)
-min_distance_to_end_and_start =  0.02*max_distance + 0.2*(max_distance/number_of_pairs)
-max_distance_to_end_and_start =  0.15*max_distance + 0.2*(max_distance/number_of_pairs)
-max_distance_between_obstacle_pairs = 0.04* max_distance + 0.05*(max_distance/number_of_pairs)
-min_distance_between_obstacle_pairs = 0.02* max_distance + 0.08*(max_distance/(2*number_of_pairs))
-min_distance_middle_points =  0.02*max_distance + 0.35*(max_distance/(2*number_of_pairs))
-min_distance_between_obstacles = 1.2
-min_distance_between_obstacle_pairs = 1.6522
-min_distance_to_end_and_start =3;
+% Calculate distance constraints (scaled with game size and number of pairs)
+% These formulas automatically adapt to different numbers of pairs (2-5)
+% More pairs = tighter constraints (less space available)
+% Fewer pairs = looser constraints (more space available)
+min_distance_between_obstacles = 0.03* max_distance +  0.025*(max_distance/number_of_pairs);
+min_distance_to_end_and_start =  0.02*max_distance + 0.2*(max_distance/number_of_pairs);
+max_distance_to_end_and_start =  0.15*max_distance + 0.2*(max_distance/number_of_pairs);
+max_distance_between_obstacle_pairs = 0.04* max_distance + 0.05*(max_distance/number_of_pairs);
+min_distance_between_obstacle_pairs = 0.02* max_distance + 0.08*(max_distance/(2*number_of_pairs));
+min_distance_middle_points =  0.02*max_distance + 0.35*(max_distance/(2*number_of_pairs));
 for mahboobe=1:2
 flag = true;
 
@@ -33,7 +34,13 @@ while flag
     flag = false;
     centers = [0.1*x_range, 0.1*y_range] + [x_scaled, y_scaled].*rand(2*number_of_pairs,2);
     centers = sortrows(centers, 1);
-    radii =  2.5 + (0.1*rand(number_of_pairs,1))*(max_distance/(2*number_of_pairs));
+    % Fixed 1.75-4.50 cm range (consistent size, difficulty from number of obstacles)
+    % This provides consistent obstacle sizes across all pair counts
+    % Formula: radius = 1.5 + (4. - 1.5)*rand = 1.5 + 2.5*rand
+    radii = 1.5 + 2.5*rand(number_of_pairs,1);
+    
+    % Alternative: Scaled approach (smaller obstacles for more pairs)
+    % radii = 2 + (0.1*rand(number_of_pairs,1))*(max_distance/(2*number_of_pairs));
     radii = repelem(radii, 2);
     
     % Define the obstacle parameters (all centers and radii concatenated)
@@ -71,10 +78,10 @@ while flag
     
         rectangles(i, :) = [xMin, yMin, width, height];
 
-        radious = radii(startIndex);
+        radius = radii(startIndex);
         distance_between_obstacles = norm(centers(startIndex,:) - centers(endIndex,:));
         % Check if the distance between the obstacles is at least 'd'
-        if distance_between_obstacles > (max_distance_between_obstacle_pairs + 2*radious) || distance_between_obstacles < (min_distance_between_obstacle_pairs + 2*radious)
+        if distance_between_obstacles > (max_distance_between_obstacle_pairs + 2*radius) || distance_between_obstacles < (min_distance_between_obstacle_pairs + 2*radius)
             flag= true;
             counter_1  = counter_1 +1 ;
         end
@@ -86,16 +93,23 @@ while flag
     end
 
     num_obstacles = size(centers, 1);
-    % Check for intersection between obstacles
+    % Check for intersection between obstacles from different pairs
+    % Note: Obstacles within the same pair are already checked by line 77
     for i = 1:num_obstacles
         for j = i+1:num_obstacles
+            % Determine which pairs these obstacles belong to
+            pair_i = ceil(i / 2);
+            pair_j = ceil(j / 2);
+            
+            % Skip if they're in the same pair (already checked)
+            if pair_i == pair_j
+                continue
+            end
+            
             center1 = centers(i, :);
             center2 = centers(j, :);
             radius1 = radii(i);
             radius2 = radii(j);
-            if radius1 == radius2
-                continue
-            end
             distance = norm(center1 - center2);
             
             if distance < (radius1 + radius2 + min_distance_between_obstacles)
@@ -192,14 +206,27 @@ while flag
         % Calculate the distance to the start and end points
         distance_to_start = norm(X_s - obstacle_position);
         distance_to_end = norm(X_e - obstacle_position);
+        
+        % Check first obstacle's distance to start point (with range constraint)
         if i == 1
-        % Check if the distance is at least 'd' for both start and end points
             if distance_to_start < (min_distance_to_end_and_start + obstacle_radius) || distance_to_start > (max_distance_to_end_and_start + obstacle_radius)
                 flag = true;
                 counter_4  = counter_4 +1 ;
             end
-        elseif i ==num_obstacles
+        % Check last obstacle's distance to end point (with range constraint)
+        elseif i == num_obstacles
             if distance_to_end < (min_distance_to_end_and_start + obstacle_radius) || distance_to_end > (max_distance_to_end_and_start + obstacle_radius)
+                flag = true;
+                counter_4  = counter_4 +1 ;
+            end
+        else
+            % For all other obstacles, ensure they're not too close to start/end
+            % (minimum distance check only, no maximum constraint)
+            if distance_to_start < (min_distance_to_end_and_start + obstacle_radius)
+                flag = true;
+                counter_4  = counter_4 +1 ;
+            end
+            if distance_to_end < (min_distance_to_end_and_start + obstacle_radius)
                 flag = true;
                 counter_4  = counter_4 +1 ;
             end
