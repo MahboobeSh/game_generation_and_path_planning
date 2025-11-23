@@ -2,26 +2,57 @@ clc
 clear
 x_range = 48;
 y_range = 27;
-x_scaled = 0.85*x_range;
-y_scaled = 0.85*y_range;
-number_of_pairs = 5;
+x_scaled = 0.95*x_range;
+y_scaled = 0.95*y_range;
+x_margin = 0.025*x_range;  % 2.5% margin
+y_margin = 0.025*y_range;
+number_of_pairs = 4;
 max_distance = sqrt(x_range^2 + y_range^2);
 output_folder = "C:\Users\mahbo\OneDrive - University of Calgary\code\game_creation_and_fits";
+
+% ============================================================================
+% OBSTACLE RADIUS CONFIGURATION (Global Variables - Easy to Modify)
+% ============================================================================
+% Set the minimum and maximum obstacle radius (in cm)
+% These values are used for all pair counts (2-5 pairs)
+% To change obstacle sizes, modify these two variables:
+min_radius = 2;  % Minimum obstacle radius (cm)
+max_radius = 4;  % Maximum obstacle radius (cm)
+% ============================================================================
+
+% ============================================================================
+% DISTANCE CONSTRAINT CONFIGURATION (Global Variables - Easy to Modify)
+% ============================================================================
+% SIMPLIFIED APPROACH: Fixed minimums, scaling maximums
+% - Minimum values: FIXED (same for all pair counts) - ensures consistent difficulty floor
+% - Maximum values: SCALE with number of pairs - adapts to available space
+%
+% MINIMUM VALUES (Fixed - same for all pairs 2-5):
+min_distance_between_obstacles = 1.5;  % Minimum gap between obstacles from different pairs (cm)
+min_distance_between_obstacle_pairs = 2.0;  % Minimum gap between obstacles in same pair (cm)
+min_distance_to_end_and_start = 2.5;  % Minimum distance from start/end points (cm)
+min_distance_middle_points = 2.5;  % Minimum distance between middle points of pairs (cm)
+% ============================================================================
 % min_distance_between_obstacles = 0.12*sqrt((x_range/number_of_pairs)^2 + (y_range/number_of_pairs)^2)
 % max_distance_between_obstacle_pairs = 1.25*min_distance_between_obstacles
 % min_distance_to_end_and_start =  0.5*sqrt(x_range^2 + y_range^2)/number_of_pairs;
 % min_distance_middle_points = min_distance_to_end_and_start;
-% Calculate distance constraints (scaled with game size and number of pairs)
+% Calculate MAXIMUM distance constraints (scaled with game size and number of pairs)
 % These formulas automatically adapt to different numbers of pairs (2-5)
-% More pairs = tighter constraints (less space available)
-% Fewer pairs = looser constraints (more space available)
-min_distance_between_obstacles = 0.03* max_distance +  0.025*(max_distance/number_of_pairs);
-min_distance_to_end_and_start =  0.02*max_distance + 0.2*(max_distance/number_of_pairs);
-max_distance_to_end_and_start =  0.15*max_distance + 0.2*(max_distance/number_of_pairs);
-max_distance_between_obstacle_pairs = 0.04* max_distance + 0.05*(max_distance/number_of_pairs);
-min_distance_between_obstacle_pairs = 0.02* max_distance + 0.08*(max_distance/(2*number_of_pairs));
-min_distance_middle_points =  0.02*max_distance + 0.35*(max_distance/(2*number_of_pairs));
-for mahboobe=1:2
+% More pairs = smaller maximums (less space available)
+% Fewer pairs = larger maximums (more space available)
+% 
+% NOTE: Minimum values are FIXED (defined above) - same for all pairs
+%       Maximum values SCALE with number of pairs - adapts to available space
+
+% Maximum values (scale with pairs)
+max_distance_to_end_and_start = 0.15*max_distance + 0.2*(max_distance/number_of_pairs);
+max_distance_between_obstacle_pairs = 0.05* max_distance + 0.03*(max_distance/number_of_pairs);
+
+% Minimum values are already set above as fixed constants
+% (min_distance_between_obstacles, min_distance_between_obstacle_pairs, 
+%  min_distance_to_end_and_start, min_distance_middle_points)
+for mahboobe=1:40
 flag = true;
 
 
@@ -32,14 +63,30 @@ counter_4 = 0;
 counter_5 = 0;
 while flag
     flag = false;
-    centers = [0.1*x_range, 0.1*y_range] + [x_scaled, y_scaled].*rand(2*number_of_pairs,2);
+    
+    % ============================================================================
+    % OBSTACLE CENTER GENERATION (Improved Space Utilization)
+    % ============================================================================
+    % OPTION 1: Stratified X, Random Y (Recommended - Better space usage)
+
+    
+    % Divide X-axis into number_of_pairs regions for even distribution
+
+    centers = [x_margin, y_margin] + [x_range-2*x_margin, y_range-2*y_margin].*rand(2*number_of_pairs,2);
     centers = sortrows(centers, 1);
-    % Fixed 1.75-4.50 cm range (consistent size, difficulty from number of obstacles)
+    
+    % OPTION 2: Pure Random (Original - More variety, less space efficient)
+    % Uncomment below and comment above to use original random approach
+    % centers = [0.1*x_range, 0.1*y_range] + [x_scaled, y_scaled].*rand(2*number_of_pairs,2);
+    % centers = sortrows(centers, 1);
+    % Fixed radius range (consistent size, difficulty from number of obstacles)
+    % Uses global variables min_radius and max_radius defined at top of file
     % This provides consistent obstacle sizes across all pair counts
-    % Formula: radius = 1.5 + (4. - 1.5)*rand = 1.5 + 2.5*rand
-    radii = 1.5 + 2.5*rand(number_of_pairs,1);
+    % To change obstacle sizes, modify min_radius and max_radius at the top
+    radii = min_radius + (max_radius - min_radius)*rand(number_of_pairs,1);
     
     % Alternative: Scaled approach (smaller obstacles for more pairs)
+    % Uncomment below and comment above to use scaling instead of fixed size
     % radii = 2 + (0.1*rand(number_of_pairs,1))*(max_distance/(2*number_of_pairs));
     radii = repelem(radii, 2);
     
@@ -48,12 +95,16 @@ while flag
     % radii = [1; 2; 1; 2; 1; 1.5]; % All radii concatenated
     
 
-    X_m = find_middle_point_in_obstacles(centers);
-    if min(pdist(X_m)) < min_distance_middle_points
-        flag = true;
-        counter_5 = counter_5 +1; 
-
-    end
+    % ============================================================================
+    % CONSTRAINT CHECK 1: Middle Points Distance (COMMENTED OUT - Testing)
+    % ============================================================================
+    % Ensures middle points of obstacle pairs are sufficiently separated
+    % COMMENTED: User testing if this constraint is necessary
+    % X_m = find_middle_point_in_obstacles(centers);
+    % if min(pdist(X_m)) < min_distance_middle_points
+    %     flag = true;
+    %     counter_5 = counter_5 +1; 
+    % end
     % Number of centers per set
     numCentersPerSet = 2;
     numSets = number_of_pairs;
@@ -80,28 +131,52 @@ while flag
 
         radius = radii(startIndex);
         distance_between_obstacles = norm(centers(startIndex,:) - centers(endIndex,:));
-        % Check if the distance between the obstacles is at least 'd'
-        if distance_between_obstacles > (max_distance_between_obstacle_pairs + 2*radius) || distance_between_obstacles < (min_distance_between_obstacle_pairs + 2*radius)
-            flag= true;
-            counter_1  = counter_1 +1 ;
+        
+        % ============================================================================
+        % CONSTRAINT CHECK 2: Distance Between Obstacles in Same Pair (ACTIVE)
+        % ============================================================================
+        % Ensures obstacles in the same pair are at least min_distance_between_obstacle_pairs apart
+        % This is the main constraint you want to keep
+        if distance_between_obstacles < (min_distance_between_obstacle_pairs + 2*radius)
+            flag = true;
+            counter_1 = counter_1 + 1;
+        end
+        
+        % ============================================================================
+        % CONSTRAINT CHECK 3: Maximum Distance Between Obstacles in Same Pair (ACTIVE)
+        % ============================================================================
+        % Prevents obstacles in same pair from being too far apart
+        % This is NECESSARY - without it, gates become too wide and games are too easy
+        if distance_between_obstacles > (max_distance_between_obstacle_pairs + 2*radius)
+            flag = true;
+            counter_1 = counter_1 + 1;
         end
     end
-    % Check for rectangle collisions
+    
+    % ============================================================================
+    % CONSTRAINT CHECK 4: Rectangle Collisions (ACTIVE)
+    % ============================================================================
+    % Prevents bounding rectangles of different pairs from overlapping
+    % This is NECESSARY to prevent pairs from being too close together
     if checkRectanglesForCollision(rectangles)
         flag = true;
-        counter_2  = counter_2 +1 ;
+        counter_2 = counter_2 + 1;
     end
 
     num_obstacles = size(centers, 1);
-    % Check for intersection between obstacles from different pairs
-    % Note: Obstacles within the same pair are already checked by line 77
+    
+    % ============================================================================
+    % CONSTRAINT CHECK 5: Collision Check Between Obstacles (ACTIVE)
+    % ============================================================================
+    % This is the main collision check - ensures obstacles from different pairs don't overlap
+    % This is ESSENTIAL and should be kept active
     for i = 1:num_obstacles
         for j = i+1:num_obstacles
             % Determine which pairs these obstacles belong to
             pair_i = ceil(i / 2);
             pair_j = ceil(j / 2);
             
-            % Skip if they're in the same pair (already checked)
+            % Skip if they're in the same pair (already checked above)
             if pair_i == pair_j
                 continue
             end
@@ -112,9 +187,10 @@ while flag
             radius2 = radii(j);
             distance = norm(center1 - center2);
             
+            % Check if obstacles overlap (collision)
             if distance < (radius1 + radius2 + min_distance_between_obstacles)
                 flag = true;
-                counter_3  = counter_3 +1 ;
+                counter_3 = counter_3 + 1;
             end
         end
         % obstacle_position = temp_obstacle(i, :);
@@ -200,38 +276,43 @@ while flag
     X_e = [intersection_x, intersection_y];
 
 
-    for i = 1:num_obstacles
-        obstacle_position = centers(i, :);
-        obstacle_radius = radii(i);
-        % Calculate the distance to the start and end points
-        distance_to_start = norm(X_s - obstacle_position);
-        distance_to_end = norm(X_e - obstacle_position);
-        
-        % Check first obstacle's distance to start point (with range constraint)
-        if i == 1
-            if distance_to_start < (min_distance_to_end_and_start + obstacle_radius) || distance_to_start > (max_distance_to_end_and_start + obstacle_radius)
-                flag = true;
-                counter_4  = counter_4 +1 ;
-            end
-        % Check last obstacle's distance to end point (with range constraint)
-        elseif i == num_obstacles
-            if distance_to_end < (min_distance_to_end_and_start + obstacle_radius) || distance_to_end > (max_distance_to_end_and_start + obstacle_radius)
-                flag = true;
-                counter_4  = counter_4 +1 ;
-            end
-        else
-            % For all other obstacles, ensure they're not too close to start/end
-            % (minimum distance check only, no maximum constraint)
-            if distance_to_start < (min_distance_to_end_and_start + obstacle_radius)
-                flag = true;
-                counter_4  = counter_4 +1 ;
-            end
-            if distance_to_end < (min_distance_to_end_and_start + obstacle_radius)
-                flag = true;
-                counter_4  = counter_4 +1 ;
-            end
-        end
-    end
+    % ============================================================================
+    % CONSTRAINT CHECK 6: Start/End Distance (COMMENTED OUT - Testing)
+    % ============================================================================
+    % Ensures obstacles are not too close to start/end points
+    % COMMENTED: User testing if this constraint is necessary
+    % for i = 1:num_obstacles
+    %     obstacle_position = centers(i, :);
+    %     obstacle_radius = radii(i);
+    %     % Calculate the distance to the start and end points
+    %     distance_to_start = norm(X_s - obstacle_position);
+    %     distance_to_end = norm(X_e - obstacle_position);
+    %     
+    %     % Check first obstacle's distance to start point (with range constraint)
+    %     if i == 1
+    %         if distance_to_start < (min_distance_to_end_and_start + obstacle_radius) || distance_to_start > (max_distance_to_end_and_start + obstacle_radius)
+    %             flag = true;
+    %             counter_4 = counter_4 + 1;
+    %         end
+    %     % Check last obstacle's distance to end point (with range constraint)
+    %     elseif i == num_obstacles
+    %         if distance_to_end < (min_distance_to_end_and_start + obstacle_radius) || distance_to_end > (max_distance_to_end_and_start + obstacle_radius)
+    %             flag = true;
+    %             counter_4 = counter_4 + 1;
+    %         end
+    %     else
+    %         % For all other obstacles, ensure they're not too close to start/end
+    %         % (minimum distance check only, no maximum constraint)
+    %         if distance_to_start < (min_distance_to_end_and_start + obstacle_radius)
+    %             flag = true;
+    %             counter_4 = counter_4 + 1;
+    %         end
+    %         if distance_to_end < (min_distance_to_end_and_start + obstacle_radius)
+    %             flag = true;
+    %             counter_4 = counter_4 + 1;
+    %         end
+    %     end
+    % end
 
 end
 
@@ -277,14 +358,22 @@ legend('Set 1', 'Set 2', 'Set 3', 'Location', 'bestoutside');
 
 hold off; % Release the hold on the current figure
 
-
 obstacle_radious = radii';
 obstacle = centers;
 
+% ============================================================================
+% CREATE FOLDER FOR THIS NUMBER OF PAIRS
+% ============================================================================
+pairs_folder = fullfile(output_folder, sprintf('%dpairs', number_of_pairs));
+if ~exist(pairs_folder, 'dir')
+    mkdir(pairs_folder);
+end
+
 % Find the next available set number for this number of pairs
 % Look for existing files matching pattern: set_[number]_[pairs]pairs.mat
+% Search in the pairs-specific folder
 pattern = sprintf('set_*_%dpairs.mat', number_of_pairs);
-existing_files = dir(fullfile(output_folder, pattern));
+existing_files = dir(fullfile(pairs_folder, pattern));
 
 % Extract set numbers from existing files
 set_numbers = [];
@@ -311,15 +400,25 @@ end
 
 % Create filename: set_[number]_[pairs]pairs.mat
 filename = sprintf('set_%d_%dpairs.mat', next_set_number, number_of_pairs);
-file_path = fullfile(output_folder, filename);
+% Save in pairs-specific folder
+file_path = fullfile(pairs_folder, filename);
 % Save variables to the file (including number of pairs)
 save(file_path, 'y_range', 'x_range', 'X_e','X_s','obstacle','obstacle_radious','number_of_pairs');
+
+% ============================================================================
+% SAVE FIGURE TO FOLDER
+% ============================================================================
+figure_filename = sprintf('set_%d_%dpairs.png', next_set_number, number_of_pairs);
+figure_path = fullfile(pairs_folder, figure_filename);
+saveas(gcf, figure_path);
 
 % Display information
 fprintf('\n=== Obstacle Set Created ===\n');
 fprintf('Number of Pairs: %d\n', number_of_pairs);
 fprintf('Total Obstacles: %d\n', num_obstacles);
+fprintf('Folder: %s\n', pairs_folder);
 fprintf('File saved: %s\n', filename);
+fprintf('Figure saved: %s\n', figure_filename);
 fprintf('\nRejection Counters:\n');
 fprintf('  Middle points too close: %d\n', counter_5);
 fprintf('  Distance between pairs: %d\n', counter_1);
