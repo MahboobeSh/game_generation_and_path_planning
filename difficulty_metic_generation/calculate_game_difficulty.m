@@ -1,4 +1,4 @@
-function difficulty_metrics = calculate_game_difficulty(path, obstacles, obstacle_radii, X_s, X_e, x_range, y_range, number_of_pairs)
+function difficulty_metrics = calculate_game_difficulty(path, obstacles, obstacle_radii, X_s, X_e, x_range, y_range, number_of_pairs, Start_points, End_points)
     % Calculate comprehensive difficulty metrics for the game
     % Returns a structure with various difficulty measures
     % Incorporates game generation constraints and metrics
@@ -65,8 +65,32 @@ function difficulty_metrics = calculate_game_difficulty(path, obstacles, obstacl
     path_length_factor = path_length / diagonal_distance;
     
     % 2. Curvature Factor (deviation from straight line)
-    straight_line_distance = norm(X_e - X_s);
-    curvature_factor = (path_length - straight_line_distance) / straight_line_distance;
+    % Calculate both original (single straight line) and segmented (through middle points) curvature
+    
+    % Original curvature: single straight line from start to end
+    original_straight_distance = norm(X_e - X_s);
+    curvature_factor_original = (path_length - original_straight_distance) / original_straight_distance;
+    
+    % Segmented curvature: through middle points (if available)
+    if nargin >= 9 && exist('Start_points', 'var') && ~isempty(Start_points) && ...
+       exist('End_points', 'var') && ~isempty(End_points) && ...
+       size(Start_points, 1) == size(End_points, 1) && size(Start_points, 1) > 0
+        % Calculate segmented straight line through middle points
+        % Start_points = [X_s; middle_points], End_points = [middle_points; X_e]
+        segmented_straight_distance = 0;
+        for i = 1:size(Start_points, 1)
+            segmented_straight_distance = segmented_straight_distance + norm(End_points(i, :) - Start_points(i, :));
+        end
+        curvature_factor_segmented = (path_length - segmented_straight_distance) / segmented_straight_distance;
+        % Use segmented as the main curvature factor
+        curvature_factor = curvature_factor_segmented;
+        straight_line_distance = segmented_straight_distance;
+    else
+        % Fallback: use single straight line from start to end
+        curvature_factor_segmented = curvature_factor_original;
+        curvature_factor = curvature_factor_original;
+        straight_line_distance = original_straight_distance;
+    end
     
     % 3. Minimum Clearance (narrowest gap between path and obstacles)
     min_clearance = inf;
@@ -250,6 +274,8 @@ function difficulty_metrics = calculate_game_difficulty(path, obstacles, obstacl
     difficulty_metrics.overall_difficulty = overall_difficulty;
     difficulty_metrics.path_length_factor = path_length_factor;
     difficulty_metrics.curvature_factor = curvature_factor;
+    difficulty_metrics.curvature_factor_original = curvature_factor_original;
+    difficulty_metrics.curvature_factor_segmented = curvature_factor_segmented;
     difficulty_metrics.min_clearance = min_clearance;
     difficulty_metrics.avg_obstacle_distance = avg_obstacle_distance;
     difficulty_metrics.obstacle_density = obstacle_density;
