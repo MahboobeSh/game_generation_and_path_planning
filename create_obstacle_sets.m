@@ -6,9 +6,10 @@ x_scaled = 0.95*x_range;
 y_scaled = 0.95*y_range;
 x_margin = 0.025*x_range;  % 2.5% margin
 y_margin = 0.025*y_range;
-number_of_pairs = 4;
+number_of_pairs = 5;
 max_distance = sqrt(x_range^2 + y_range^2);
 output_folder = "C:\Users\mahbo\OneDrive - University of Calgary\code\game_creation_and_fits";
+output_folder = "/home/mahboobe/Desktop/game_generation_and_path_planning/new_games";
 
 % ============================================================================
 % OBSTACLE RADIUS CONFIGURATION (Global Variables - Easy to Modify)
@@ -52,7 +53,7 @@ max_distance_between_obstacle_pairs = 0.05* max_distance + 0.03*(max_distance/nu
 % Minimum values are already set above as fixed constants
 % (min_distance_between_obstacles, min_distance_between_obstacle_pairs, 
 %  min_distance_to_end_and_start, min_distance_middle_points)
-for mahboobe=1:40
+for mahboobe=1:100
 flag = true;
 
 

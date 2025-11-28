@@ -83,7 +83,7 @@ function visualize_rehab_metrics(set_numbers, pairs_numbers)
         print_rehab_metrics(games_data.names{i}, games_data.rehab_metrics{i});
     end
     
-    % Create visualization
+    % Create visualization (all in one figure)
     create_rehab_visualization(games_data);
     
     fprintf('\n========================================\n');
@@ -113,6 +113,10 @@ function print_rehab_metrics(name, m)
     fprintf('  Inflections (×0.5):   %.4f\n', m.InflectionCounts * 0.5);
     fprintf('  Y Reversals (×2.0):   %.4f\n', m.Y_Reversals * 2.0);
     fprintf('  Gate Rotation (×2.0): %.4f\n', m.GateRotation * 2.0);
+    fprintf('\n');
+    fprintf('Consistency Metrics:\n');
+    fprintf('  Avg Path Slope (deg): %.4f\n', m.AvgPathSlope);
+    fprintf('  Path Length (cm):     %.4f\n', m.PathLength);
 end
 
 function create_rehab_visualization(games_data)
@@ -120,11 +124,11 @@ function create_rehab_visualization(games_data)
     
     num_games = length(games_data.rehab_metrics);
     
-    figure('Name', 'Rehabilitation Metrics Visualization', 'Position', [50 50 1400 900]);
+    figure('Name', 'Rehabilitation Metrics Visualization', 'Position', [50 50 1400 1000]);
     
     % Row 1: Game layouts with path colored by difficulty (inverse clearance)
     for i = 1:num_games
-        subplot(3, num_games, i);
+        subplot(4, num_games, i);
         data = games_data.data{i};
         path = games_data.path{i};
         m = games_data.rehab_metrics{i};
@@ -177,9 +181,9 @@ function create_rehab_visualization(games_data)
     end
     
     % Row 2: Rehab metrics comparison bar chart
-    subplot(3, num_games, num_games+1:2*num_games);
+    subplot(4, num_games, num_games+1:2*num_games);
     
-    % Prepare data for bar chart
+    % Prepare data for bar chart (including Composite Score, excluding consistency metrics)
     metric_names = {'Steering Index', 'Inflection Counts', 'Goal Align (deg)', ...
                     'Y Reversals', 'Verticality', 'Total Rotation (deg)', ...
                     'Gate Rotation', 'Composite Score'};
@@ -204,10 +208,31 @@ function create_rehab_visualization(games_data)
     ylabel('Metric Value');
     title('Rehabilitation Metrics Comparison', 'FontSize', 11);
     grid on;
-    xtickangle(45);
     
-    % Row 3: Detailed metrics table
-    subplot(3, num_games, 2*num_games+1:3*num_games);
+    % Row 3: Consistency metrics & composite score bar chart
+    subplot(4, num_games, 2*num_games+1:3*num_games);
+    
+    % Prepare data for consistency bar chart
+    consistency_metric_names = {'Composite Score', 'Avg Path Slope (deg)', 'Path Length (cm)'};
+    consistency_metric_values = zeros(length(consistency_metric_names), num_games);
+    
+    for i = 1:num_games
+        m = games_data.rehab_metrics{i};
+        consistency_metric_values(1, i) = m.CompositeScore;
+        consistency_metric_values(2, i) = m.AvgPathSlope;
+        consistency_metric_values(3, i) = m.PathLength;
+    end
+    
+    % Create grouped bar chart
+    bar(consistency_metric_values');
+    legend(consistency_metric_names, 'Location', 'eastoutside', 'FontSize', 8);
+    set(gca, 'XTickLabel', games_data.names);
+    ylabel('Metric Value');
+    title('Composite Score & Consistency Metrics', 'FontSize', 11);
+    grid on;
+    
+    % Row 4: Detailed metrics table
+    subplot(4, num_games, 3*num_games+1:4*num_games);
     axis off;
     
     % Create table data
@@ -226,6 +251,9 @@ function create_rehab_visualization(games_data)
         'Inflections (×0.5)';
         'Y Reversals (×2.0)';
         'Gate Rotation (×2.0)';
+        '--- Consistency ---';
+        'Avg Path Slope (deg)';
+        'Path Length (cm)';
     };
     
     col_labels = games_data.names;
@@ -247,6 +275,9 @@ function create_rehab_visualization(games_data)
         table_data{12, i} = sprintf('%.4f', m.InflectionCounts * 0.5);
         table_data{13, i} = sprintf('%.4f', m.Y_Reversals * 2.0);
         table_data{14, i} = sprintf('%.4f', m.GateRotation * 2.0);
+        table_data{15, i} = '';  % Separator
+        table_data{16, i} = sprintf('%.2f', m.AvgPathSlope);
+        table_data{17, i} = sprintf('%.2f', m.PathLength);
     end
     
     % Create uitable
@@ -259,5 +290,102 @@ function create_rehab_visualization(games_data)
     t.ColumnWidth = 'auto';
     
     sgtitle('Rehabilitation/Bio-Motor Difficulty Metrics', 'FontSize', 13);
+end
+
+function create_consistency_visualization(games_data)
+    % Create separate figure for consistency metrics and composite score
+    
+    num_games = length(games_data.rehab_metrics);
+    
+    figure('Name', 'Consistency Metrics & Composite Score', 'Position', [100 100 1400 800]);
+    
+    % Subplot 1: Bar chart comparing consistency metrics and composite score
+    subplot(2, 2, 1);
+    
+    metric_names = {'Composite Score', 'Avg Path Slope (deg)', 'Path Length (cm)'};
+    metric_values = zeros(length(metric_names), num_games);
+    
+    for i = 1:num_games
+        m = games_data.rehab_metrics{i};
+        metric_values(1, i) = m.CompositeScore;
+        metric_values(2, i) = m.AvgPathSlope;
+        metric_values(3, i) = m.PathLength;
+    end
+    
+    % Create grouped bar chart (similar style to main chart)
+    bar(metric_values');
+    legend(metric_names, 'Location', 'eastoutside', 'FontSize', 10);
+    set(gca, 'XTickLabel', games_data.names);
+    ylabel('Metric Value');
+    title('Composite Score & Consistency Metrics', 'FontSize', 12, 'FontWeight', 'bold');
+    grid on;
+    
+    % Subplot 2: Scatter plot showing relationship
+    subplot(2, 2, 2);
+    
+    composite_scores = zeros(num_games, 1);
+    avg_slopes = zeros(num_games, 1);
+    path_lengths = zeros(num_games, 1);
+    
+    for i = 1:num_games
+        m = games_data.rehab_metrics{i};
+        composite_scores(i) = m.CompositeScore;
+        avg_slopes(i) = m.AvgPathSlope;
+        path_lengths(i) = m.PathLength;
+    end
+    
+    % Normalize path length for better visualization (scale to similar range)
+    max_path_length = max(path_lengths);
+    normalized_path_lengths = path_lengths / max_path_length * max(avg_slopes);
+    
+    % Create scatter plot with composite score as color
+    scatter(avg_slopes, normalized_path_lengths, 150, composite_scores, 'filled');
+    colormap(gca, 'cool');
+    colorbar;
+    c = colorbar;
+    c.Label.String = 'Composite Score';
+    
+    % Add labels for each point
+    for i = 1:num_games
+        text(avg_slopes(i), normalized_path_lengths(i), games_data.names{i}, ...
+            'FontSize', 9, 'HorizontalAlignment', 'center', ...
+            'VerticalAlignment', 'bottom', 'FontWeight', 'bold');
+    end
+    
+    xlabel('Avg Path Slope (deg)', 'FontSize', 11);
+    ylabel(sprintf('Path Length (normalized, max=%.1f cm)', max_path_length), 'FontSize', 11);
+    title('Consistency Metrics Relationship', 'FontSize', 12, 'FontWeight', 'bold');
+    grid on;
+    
+    % Subplot 3 & 4: Table spanning bottom row
+    subplot(2, 2, [3, 4]);
+    axis off;
+    
+    row_labels = {
+        'Composite Score';
+        'Avg Path Slope (deg)';
+        'Path Length (cm)';
+    };
+    
+    col_labels = games_data.names;
+    table_data = cell(length(row_labels), num_games);
+    
+    for i = 1:num_games
+        m = games_data.rehab_metrics{i};
+        table_data{1, i} = sprintf('%.4f', m.CompositeScore);
+        table_data{2, i} = sprintf('%.2f', m.AvgPathSlope);
+        table_data{3, i} = sprintf('%.2f', m.PathLength);
+    end
+    
+    % Create uitable
+    t = uitable('Data', table_data, ...
+        'ColumnName', col_labels, ...
+        'RowName', row_labels, ...
+        'Units', 'normalized', ...
+        'Position', [0.1 0.1 0.8 0.7], ...
+        'FontSize', 11);
+    t.ColumnWidth = 'auto';
+    
+    sgtitle('Consistency Metrics & Composite Score Analysis', 'FontSize', 14, 'FontWeight', 'bold');
 end
 

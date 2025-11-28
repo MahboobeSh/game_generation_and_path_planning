@@ -6,6 +6,7 @@ clc;
 
 % Set the base folder (adjust to your path)
 base_folder = 'C:\Users\mahbo\OneDrive - University of Calgary\code\game_creation_and_fits';
+base_folder = "/home/mahboobe/Desktop/game_generation_and_path_planning/game"
 
 % Example: Plot control points for set 14 with 3 pairs of obstacles
 set_number = 14;

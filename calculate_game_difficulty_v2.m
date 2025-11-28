@@ -1,4 +1,4 @@
-function difficulty_metrics = calculate_game_difficulty_v2(path, obstacles, obstacle_radii, X_s, X_e, x_range, y_range, number_of_pairs, Start_points, End_points)
+function difficulty_metrics = calculate_game_difficulty_v2(path, obstacles, obstacle_radii, X_s, X_e, x_range, y_range, number_of_pairs, Start_points, End_points, num_samples_list)
     % Enhanced difficulty calculation with direction change and positioning metrics
     %
     % NEW METRICS ADDED:
@@ -78,7 +78,11 @@ function difficulty_metrics = calculate_game_difficulty_v2(path, obstacles, obst
     
     % Calculate rehabilitation/bio-motor difficulty metrics
     % Note: num_samples_list is optional, pass empty if not available
-    rehab_metrics = calculate_rehab_metrics(path, obstacles, obstacle_radii, x_range, y_range, []);
+    if nargin >= 11 && exist('num_samples_list', 'var') && ~isempty(num_samples_list)
+        rehab_metrics = calculate_rehab_metrics(path, obstacles, obstacle_radii, x_range, y_range, num_samples_list);
+    else
+        rehab_metrics = calculate_rehab_metrics(path, obstacles, obstacle_radii, x_range, y_range, []);
+    end
     
     %% ========== CLEARANCE METRICS ==========
     

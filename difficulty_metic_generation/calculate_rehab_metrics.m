@@ -59,7 +59,7 @@ function [rehab_metrics] = calculate_rehab_metrics(path_curve, obstacles, obstac
             vec_to_goal = vec_to_goal / dist_to_goal;
             current_move_vec = current_move_vec / norm_move;
             dot_prod = max(min(dot(vec_to_goal, current_move_vec), 1), -1);
-            alignment_scores(end+1) = rad2deg(acos(dot_prod));
+            alignment_scores(end+1) = acos(dot_prod);
         end
     end
     if isempty(alignment_scores), goal_metric = 0; else, goal_metric = mean(alignment_scores); end
@@ -91,7 +91,7 @@ function [rehab_metrics] = calculate_rehab_metrics(path_curve, obstacles, obstac
     % Cumulative Turning Angle (Micro-Rotation)
     headings = atan2(diff(path_curve(:,2)), diff(path_curve(:,1)));
     headings = unwrap(headings);
-    total_rotation = sum(abs(diff(headings))) * (180/pi);
+    total_rotation = sum(abs(diff(headings)));
 
     %% 3. Gate Rotation (Macro-Flow Logic)
     % Only runs if segment data (num_samples_list) is provided
@@ -99,13 +99,23 @@ function [rehab_metrics] = calculate_rehab_metrics(path_curve, obstacles, obstac
         try
             % Calls the helper function we defined for Start->Gate->End rotation
             rot_m = calculate_inter_gate_rotation_v2(path_curve, num_samples_list);
-            gate_rotation_score = rot_m.TotalGateRotation;
+            gate_rotation_score = deg2rad(rot_m.TotalGateRotation);
         catch
             gate_rotation_score = 0;
         end
     else
         gate_rotation_score = 0;
     end
+
+    %% 6. Consistency Checks (Length & Slope)
+    
+    % A. Average Path Slope (Degrees)
+    step_headings = atan2(diffs(:,2), diffs(:,1)); 
+    avg_path_slope = mean(abs(rad2deg(step_headings)));
+    
+    % B. Total Path Length (cm)
+    total_path_length = sum(step_lengths);
+
 
     %% 4. Pack Results
     rehab_metrics = struct();
@@ -119,6 +129,9 @@ function [rehab_metrics] = calculate_rehab_metrics(path_curve, obstacles, obstac
     rehab_metrics.TotalRotation = total_rotation;  
     rehab_metrics.GateRotation = gate_rotation_score; % The new macro-metric
     
+    % Consistency Metrics (Not in Composite Score)
+    rehab_metrics.AvgPathSlope = avg_path_slope;
+    rehab_metrics.PathLength = total_path_length;
     % === UPDATED COMPOSITE SCORE ===
     % Steering (1.0): Base difficulty (Narrowness/Length)
     % Goal Alignment (0.5): Conflict with end point (Average Intensity)
@@ -126,8 +139,7 @@ function [rehab_metrics] = calculate_rehab_metrics(path_curve, obstacles, obstac
     % Gate Rotation (2.0): Penalty for high "Zigzag" intensity (Macro turns)
     
     rehab_metrics.CompositeScore = (steering_index * 1.0) + ...
-                                   (goal_metric * 0.5) + ...
-                                   (sign_changes * 0.5) + ...
-                                   (y_reversals * 2.0) + ...
+                                   (goal_metric * 10.0) + ...
+                                   (verticality_ratio * 2.0) + ...
                                    (gate_rotation_score * 2.0); 
 end

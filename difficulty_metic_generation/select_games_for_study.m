@@ -1,20 +1,24 @@
-function select_games_for_study_v2()
-    % SELECT_GAMES_FOR_STUDY_V2 (Auto-Scaling Version)
+
+    % SELECT_GAMES_FOR_STUDY_V3 (Composite Separation Analysis)
     
     % --- CONFIGURATION ---
-    base_folder = '/home/mahboobe/Desktop/game_generation_and_path_planning/game/'; 
-    folders_to_scan = {'3pairs/fit', '4pairs/fit'};
+    base_folder = '/home/mahboobe/Desktop/game_generation_and_path_planning/selected_games/'; 
+    base_folder = '/home/mahboobe/Desktop/game_generation_and_path_planning/game/';
+    folders_to_scan = {'2pairs/fit','3pairs/fit', '4pairs/fit'};
     
-    % RELAXED Length Constraints (To catch Hard games)
-    target_len_2p = 60; 
-    target_len_3p = 65; 
-    target_len_4p = 70;
-    tolerance = 0.30; % +/- 30% (Needed for complex paths)
+    % RELAXED Length Constraints
+
+    target_len_GLOBAL = 65; 
+    tolerance_cm = 10+0.1; 
     
+    min_len = target_len_GLOBAL - tolerance_cm; % 60 cm
+    max_len = target_len_GLOBAL + tolerance_cm; % 70 cm
+    
+
     % Storage
-    all_games = struct('name', {}, 'pairs', {}, 'SteeringDensity', {}, 'GoalAlign', {});
+    all_games = struct('name', {}, 'pairs', {}, 'SteeringDensity', {}, 'GoalAlign', {}, 'CompositeScore', {});
     
-    fprintf('Scanning games with +/- 30%% length tolerance...\n');
+    fprintf('Scanning games and calculating Composite Scores...\n');
     
     % --- 1. LOAD AND PROCESS ---
     for f = 1:length(folders_to_scan)
@@ -27,7 +31,7 @@ function select_games_for_study_v2()
                 
                 % Determine Pair Count
                 if isfield(data, 'number_of_pairs'), np = data.number_of_pairs;
-                else, np = 3; end % Default
+                else, np = 3; end 
                 
                 % Get Path
                 if isfield(data, 'curve'), path = data.curve;
@@ -38,22 +42,30 @@ function select_games_for_study_v2()
                 diffs = diff(path);
                 L = sum(sqrt(sum(diffs.^2, 2)));
                 
-                target = 65;
-                if np == 2, target = target_len_2p;
-                elseif np == 3, target = target_len_3p;
-                elseif np == 4, target = target_len_4p; end
-                
-                if L < target*(1-tolerance) || L > target*(1+tolerance)
-                    continue; 
+                                % ... inside the loop ...
+                if L < min_len || L > max_len
+                    disp(L)
+                    disp(files(i).name)
+                    continue; % Reject games that are too short/long
+                    
                 end
+                
                 
                 % Calculate Metrics
                 m = calculate_rehab_metrics(path, data.obstacle, data.obstacle_radious, data.x_range, data.y_range, data.num_samples_list);
                 
-                % Robust Metric Extraction
+                % Extract Metrics
                 if isfield(m, 'GoalAlignmentAvgDeg'), g_val = m.GoalAlignmentAvgDeg;
                 elseif isfield(m, 'GoalAlignment'), g_val = m.GoalAlignment;
                 else, g_val = 0; end
+                
+                % EXTRACT COMPOSITE SCORE
+                if isfield(m, 'CompositeScore')
+                    comp_val = m.CompositeScore;
+                else
+                    warning('CompositeScore missing for %s', files(i).name);
+                    comp_val = 0;
+                end
                 
                 % Store
                 idx = length(all_games) + 1;
@@ -61,67 +73,109 @@ function select_games_for_study_v2()
                 all_games(idx).pairs = np;
                 all_games(idx).SteeringDensity = m.SteeringIndex / L;
                 all_games(idx).GoalAlign = g_val;
+                all_games(idx).CompositeScore = comp_val;
                 
             catch
-                % Skip errors silently for cleaner output
             end
         end
     end
     
-    if isempty(all_games), error('No games found. Check paths.'); end
+    if isempty(all_games), error('No games found.'); end
     fprintf('Found %d valid games.\n', length(all_games));
     
-    % --- 2. CALCULATE PERCENTILES (The "Relative" Fix) ---
+    % --- 2. CALCULATE SEPARATION ---
+    comp_scores = [all_games.CompositeScore];
+    [sorted_scores, sort_idx] = sort(comp_scores);
+    sorted_games = all_games(sort_idx);
+    
+    % Define Thresholds (33% and 66% percentile)
+    score_33 = prctile(comp_scores, 33);
+    score_66 = prctile(comp_scores, 66);
+    
+    % --- 3. VISUALIZATION ---
+    figure('Position', [50, 50, 1600, 800], 'Name', 'Game Selection & Separation Analysis');
+    
+    % SUBPLOT 1: The Difficulty Map (Steering vs Alignment)
+    subplot(1, 2, 1);
+    hold on;
     x_vals = [all_games.SteeringDensity];
     y_vals = [all_games.GoalAlign];
     
-    % X Thresholds (Steering)
-    x_33 = prctile(x_vals, 33);
-    x_66 = prctile(x_vals, 66);
+    % Auto-Scale Map Zones
+    x_33 = prctile(x_vals, 33); x_66 = prctile(x_vals, 66); x_max = max(x_vals)*1.1;
+    y_33 = prctile(y_vals, 33); y_66 = prctile(y_vals, 66); y_max = max(y_vals)*1.1;
     
-    % Y Thresholds (Goal Alignment)
-    y_33 = prctile(y_vals, 33);
-    y_66 = prctile(y_vals, 66);
+    % Draw Zones
+    fill([0 0 x_33 x_33], [0 y_33 y_33 0], [0.8 1 0.8], 'EdgeColor', 'none', 'FaceAlpha', 0.3); % Easy
+    fill([x_66 x_66 x_max x_max], [y_66 y_max y_max y_66], [1 0.8 0.8], 'EdgeColor', 'none', 'FaceAlpha', 0.3); % Hard
     
-    % Bounds for plotting
-    x_max = max(x_vals) * 1.1;
-    y_max = max(y_vals) * 1.1;
+    gscatter(x_vals, y_vals, [all_games.pairs], 'bgr', 'o+^', 8);
+    text(x_vals, y_vals, {all_games.name}, 'VerticalAlignment','bottom', 'HorizontalAlignment','right', 'FontSize', 8, 'Interpreter', 'none');
     
-    % --- 3. VISUALIZATION ---
-    figure('Position', [100, 100, 1200, 800], 'Name', 'Auto-Scaled Selection Tool');
+    title('Difficulty Drivers (Motor vs Cognitive)');
+    xlabel('Motor Constraint (Steering Density)');
+    ylabel('Cognitive Conflict (Goal Alignment Deg)');
+    grid on; axis([0 x_max 0 y_max]);
+    
+    % SUBPLOT 2: Composite Score Separation (Bar Chart)
+    subplot(1, 2, 2);
     hold on;
     
-    % Draw RELATIVE Zones
-    % Easy (Bottom-Left 33%)
-    fill([0 0 x_33 x_33], [0 y_33 y_33 0], [0.8 1 0.8], 'EdgeColor', 'none', 'FaceAlpha', 0.3);
-    text(x_33/2, y_33/2, 'EASY ZONE', 'Color', [0 0.5 0], 'HorizontalAlignment', 'center');
+    % Color code bars based on thresholds
+    for k = 1:length(sorted_scores)
+        score = sorted_scores(k);
+        if score < score_33
+            bar(k, score, 'FaceColor', [0.2 0.8 0.2]); % Green (Easy)
+        elseif score > score_66
+            bar(k, score, 'FaceColor', [0.8 0.2 0.2]); % Red (Hard)
+        else
+            bar(k, score, 'FaceColor', [0.9 0.9 0.2]); % Yellow (Medium)
+        end
+    end
     
-    % Hard (Top-Right 33%)
-    fill([x_66 x_66 x_max x_max], [y_66 y_max y_max y_66], [1 0.8 0.8], 'EdgeColor', 'none', 'FaceAlpha', 0.3);
-    text((x_66+x_max)/2, (y_66+y_max)/2, 'HARD ZONE', 'Color', [0.8 0 0], 'HorizontalAlignment', 'center');
+    yline(score_33, '--g', 'Easy Threshold', 'LineWidth', 2);
+    yline(score_66, '--r', 'Hard Threshold', 'LineWidth', 2);
     
-    % Plot Points
-    pairs = [all_games.pairs];
-    gscatter(x_vals, y_vals, pairs, 'bgr', 'o+^', 8);
-    
-    title('Difficulty Map (Auto-Scaled)');
-    xlabel('Motor Constraint (Steering Density)');
-    ylabel('Cognitive Conflict (Avg Goal Alignment Deg)');
+    title('Composite Score Separation');
+    xlabel('Game Rank (Sorted)');
+    ylabel('Composite Difficulty Score');
     grid on;
-    axis([0 x_max 0 y_max]); % Zoom to fit data
     
-    % Add Labels
-    text(x_vals, y_vals, {all_games.name}, 'VerticalAlignment','bottom', ...
-        'HorizontalAlignment','right', 'FontSize', 8, 'Interpreter', 'none');
+    % Add Labels to Top/Bottom 3 for easy reading
+    num_g = length(sorted_scores);
+    text(1:3, sorted_scores(1:3), {sorted_games(1:3).name}, 'Rotation', 90, 'HorizontalAlignment', 'left', 'Interpreter', 'none');
+    text(num_g-2:num_g, sorted_scores(end-2:end), {sorted_games(end-2:end).name}, 'Rotation', 90, 'HorizontalAlignment', 'right', 'Interpreter', 'none');
+
+    % --- 4. PRINT SUMMARY ---
+    fprintf('\n=== SEPARATION SUMMARY ===\n');
+    fprintf('EASY Threshold (< %.2f)\n', score_33);
+    fprintf('HARD Threshold (> %.2f)\n', score_66);
+    fprintf('Separation Factor (Hard Mean / Easy Mean): %.2f x\n\n', ...
+        mean(sorted_scores(sorted_scores>score_66)) / mean(sorted_scores(sorted_scores<score_33)));
     
-    % Interactive Cursor
+    fprintf('--- TOP 4 HARD CANDIDATES ---\n');
+    for k = length(sorted_games):-1:length(sorted_games)-3
+        if k < 1, break; end
+        fprintf('%s (Score: %.2f) [%d pairs]\n', sorted_games(k).name, sorted_games(k).CompositeScore, sorted_games(k).pairs);
+    end
+    
+    fprintf('\n--- TOP 4 EASY CANDIDATES ---\n');
+    for k = 1:4
+        if k > length(sorted_games), break; end
+        fprintf('%s (Score: %.2f) [%d pairs]\n', sorted_games(k).name, sorted_games(k).CompositeScore, sorted_games(k).pairs);
+    end
+    
+    % Interactive Cursor for Map
     dcm = datacursormode(gcf);
     set(dcm, 'UpdateFcn', {@myupdatefcn, all_games});
-end
+
 
 function txt = myupdatefcn(~, event_obj, all_games)
     pos = get(event_obj,'Position');
     [~, idx] = min(abs([all_games.SteeringDensity] - pos(1)) + abs([all_games.GoalAlign] - pos(2)));
     g = all_games(idx);
-    txt = {g.name, ['Align: ' num2str(g.GoalAlign, '%.1f')], ['Steer: ' num2str(g.SteeringDensity, '%.2f')]};
+    txt = {g.name, ...
+           ['Score: ' num2str(g.CompositeScore, '%.1f')], ...
+           ['Steer: ' num2str(g.SteeringDensity, '%.2f')], ...
+           ['Align: ' num2str(g.GoalAlign, '%.1f')]};
 end

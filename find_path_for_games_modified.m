@@ -13,14 +13,14 @@ color7 = [255, 120, 0] / 255;   % Orange color (#FF7800)
 color8 = [57, 226, 213] / 255;  % Aqua color (#39E2D5)
 color9 = [8, 61, 119] / 255;    % Navy blue color (#083D77)
 
-for k = [541]
-
+for k = [131:222]
+    found_whole_path = true;
     step_size = 0.25;
-    m =6;
+    m =4;
 
     % Load the data from the .mat file
     set_number = k;
-    pairs_number =5;
+    pairs_number =4;
     % base_folder = 'C:\Users\mahbo\OneDrive - University of Calgary\code\game_creation_and_fits';
     base_folder = '/home/mahboobe/Desktop/game_generation_and_path_planning/game/';
     base_folder = '/home/mahboobe/Desktop/game_generation_and_path_planning/selected_games/';
@@ -67,6 +67,9 @@ for k = [541]
     disp('Starting  modified dynamic A* algorithm...');
     for i = 1:size(Start_points, 1)
         partial_path = a_star_algorithm_dynamic(Start_points(i, :), End_points(i, :), obstacles, obstacle_radii, x_range, y_range, step_size, visited_nodes, avoid_radius);
+        if size(partial_path,1) == 0
+            found_whole_path = false;
+        end
         dynamic_path = [dynamic_path; partial_path];
         visited_nodes = [visited_nodes; partial_path]; % Update visited nodes
     end
@@ -301,11 +304,21 @@ curve_segment_points = calculate_curve_segment_points(variables_matrix, Start_po
     if ~exist(fit_folder, 'dir')
         mkdir(fit_folder);
     end
+    unvalid_folder = fullfile(base_folder, sprintf('%dpairs', pairs_number), 'fit_unvalid');
+    if ~exist(unvalid_folder, 'dir')
+        mkdir(unvalid_folder);
+    end
     
     % Save figure in the fit folder
     figure_filename = ['figure_set_' num2str(set_number) '_' num2str(pairs_number) 'pairs_Astr_avoid_stepsize_' num2str(step_size) '_m_' num2str(m) '_2.png'];
-    figure_fullFileName = fullfile(fit_folder, figure_filename);
-    print(figure_fullFileName, '-dpng');
+    
+    if found_whole_path
+        figure_fullFileName = fullfile(fit_folder, figure_filename);
+        print(figure_fullFileName, '-dpng');
+    else
+        figure_fullFileName = fullfile(unvalid_folder, figure_filename);
+        print(figure_fullFileName, '-dpng');
+    end
     
     % Create new filename in the fit folder
     fit_set_name = sprintf('set_%d_%dpairs.mat', set_number, pairs_number);
@@ -328,9 +341,11 @@ curve_segment_points = calculate_curve_segment_points(variables_matrix, Start_po
     % Original game set variables: X_e, X_s, obstacle, obstacle_radious, x_range, y_range, number_of_pairs
     % New computed variables: Start_points, End_points, path, step_size, m, avoid_radius, 
     %                         visited_nodes, curve, curve_segment_points, variables_matrix, num_samples_list
-    save(fit_fullFileName, 'X_e', 'X_s', 'obstacle', 'obstacle_radious', 'x_range', 'y_range', 'number_of_pairs', ...
-         'Start_points', 'End_points', 'path', 'step_size', 'm', 'avoid_radius', ...
-         'visited_nodes', 'curve', 'curve_segment_points', 'variables_matrix', 'num_samples_list');
+    if found_whole_path
+        save(fit_fullFileName, 'X_e', 'X_s', 'obstacle', 'obstacle_radious', 'x_range', 'y_range', 'number_of_pairs', ...
+             'Start_points', 'End_points', 'path', 'step_size', 'm', 'avoid_radius', ...
+             'visited_nodes', 'curve', 'curve_segment_points', 'variables_matrix', 'num_samples_list');
+    end
     disp('Pathfinding completed.');
     % Convert to a string suitable for a filename (e.g., '2024-03-11_15-30-00')
 
@@ -381,6 +396,9 @@ function path = a_star_algorithm_dynamic(X_s, X_e, obstacles, obstacle_radii, x_
         end
         if mod(size(closed_list, 1), 10) == 0
             disp(['Processed ', num2str(size(closed_list, 1)), ' nodes...']);
+            if size(closed_list, 1) > 5000
+                break;
+            end
         end
     end
     disp('No path found.');
