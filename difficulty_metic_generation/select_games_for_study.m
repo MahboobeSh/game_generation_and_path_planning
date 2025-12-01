@@ -4,12 +4,13 @@
     % --- CONFIGURATION ---
     base_folder = '/home/mahboobe/Desktop/game_generation_and_path_planning/selected_games/'; 
     base_folder = '/home/mahboobe/Desktop/game_generation_and_path_planning/game/';
-    folders_to_scan = {'2pairs/fit','3pairs/fit', '4pairs/fit'};
+    base_folder =  'C:\Users\mahbo\OneDrive - University of Calgary\code\game_creation_and_fits\new_games\new_games';
+    folders_to_scan = {'3pairs/fit','4pairs/fit', '5pairs/fit'};
     
     % RELAXED Length Constraints
 
-    target_len_GLOBAL = 65; 
-    tolerance_cm = 10+0.1; 
+    target_len_GLOBAL = 85; 
+    tolerance_cm = 20+0.1; 
     
     min_len = target_len_GLOBAL - tolerance_cm; % 60 cm
     max_len = target_len_GLOBAL + tolerance_cm; % 70 cm

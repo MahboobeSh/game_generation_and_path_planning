@@ -1,5 +1,16 @@
 clc
 clear
+
+% ============================================================================
+% RANDOM NUMBER GENERATOR SEEDING
+% ============================================================================
+% Seed the random number generator based on current time to ensure different
+% results on each run and across different computers
+% 'shuffle' uses the current time as the seed
+rng('shuffle');
+% Alternative: Use a specific seed for reproducibility (uncomment to use)
+% rng(42);  % Replace 42 with any integer for reproducible results
+
 x_range = 48;
 y_range = 27;
 x_scaled = 0.95*x_range;
@@ -8,8 +19,9 @@ x_margin = 0.025*x_range;  % 2.5% margin
 y_margin = 0.025*y_range;
 number_of_pairs = 5;
 max_distance = sqrt(x_range^2 + y_range^2);
-output_folder = "C:\Users\mahbo\OneDrive - University of Calgary\code\game_creation_and_fits";
 output_folder = "/home/mahboobe/Desktop/game_generation_and_path_planning/new_games";
+output_folder = "C:\Users\Mahboobe\OneDrive - University of Calgary\code\game_creation_and_fits\new_game_set";
+
 
 % ============================================================================
 % OBSTACLE RADIUS CONFIGURATION (Global Variables - Easy to Modify)

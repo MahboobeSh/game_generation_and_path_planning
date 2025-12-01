@@ -16,7 +16,8 @@ function visualize_rehab_metrics(set_numbers, pairs_numbers)
     end
     
     base_path = '/home/mahboobe/Desktop/game_generation_and_path_planning/game';
-    
+    base_path = 'C:\Users\mahbo\OneDrive - University of Calgary\code\game_creation_and_fits\new_games\new_games\'
+ 
     fprintf('\n========================================\n');
     fprintf('REHABILITATION METRICS VISUALIZATION\n');
     fprintf('========================================\n');

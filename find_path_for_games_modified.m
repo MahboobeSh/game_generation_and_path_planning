@@ -13,18 +13,19 @@ color7 = [255, 120, 0] / 255;   % Orange color (#FF7800)
 color8 = [57, 226, 213] / 255;  % Aqua color (#39E2D5)
 color9 = [8, 61, 119] / 255;    % Navy blue color (#083D77)
 
-for k = [131:222]
+for k = [1:100]
     found_whole_path = true;
     step_size = 0.25;
     m =4;
 
     % Load the data from the .mat file
     set_number = k;
-    pairs_number =4;
+    pairs_number =3;
     % base_folder = 'C:\Users\mahbo\OneDrive - University of Calgary\code\game_creation_and_fits';
     base_folder = '/home/mahboobe/Desktop/game_generation_and_path_planning/game/';
     base_folder = '/home/mahboobe/Desktop/game_generation_and_path_planning/selected_games/';
     base_folder = '/home/mahboobe/Desktop/game_generation_and_path_planning/new_games/';
+    base_folder='C:\Users\mahbo\OneDrive - University of Calgary\code\game_creation_and_fits\new_games\new_games\';
     pairs_folder = fullfile(base_folder, sprintf('%dpairs', pairs_number));
     set_name = sprintf('set_%d_%dpairs.mat', set_number, pairs_number);
     fullFileName = fullfile(pairs_folder, set_name);
@@ -168,24 +169,24 @@ num_samples = round(mean(num_samples_list));
 % 
 % num_samples_list = round(curve_length*100/sum(curve_length));
 % sum(sqrt(sum(diff(astar_path).^2, 2)))
-
-objective_in = @(x) optimize_bezier_to_astar(x, num_segments, Start_points(:, :), End_points(:, :), astar_path, num_samples, n_d, n_phi,num_samples_list,start_index,end_index );
-
-% Perform the optimization
-options = optimoptions('fmincon', 'Display', 'iter', 'Algorithm', 'sqp', 'MaxIterations', 1000);
-% options = optimoptions('fmincon', 'SpecifyObjectiveGradient', true, 'Algorithm', 'interior-point', 'Display', 'iter');
-% options = optimoptions('fmincon', 'SpecifyObjectiveGradient', true, 'Algorithm', 'interior-point', 'Display', 'iter');
-[x_in, f_var] = fmincon(objective_in, vector_variables_in, [], [], [], [], lb_in, ub_in, [], options);
-% [optimal_variables, optimal_cost] = fmincon(objective_function, initial_guess, [], [], [], [], [], [], [], options);
-% Reshape the optimized variables
-variables_matrix = reshape(x_in, [], n_d + n_phi+2);
-
-% Combine the control points for all segments
-
-
-% Calculate the Bézier curve segment points
-curve_segment_points = calculate_curve_segment_points(variables_matrix, Start_points, End_points, num_segments, n_d, n_phi);
-
+if found_whole_path
+    objective_in = @(x) optimize_bezier_to_astar(x, num_segments, Start_points(:, :), End_points(:, :), astar_path, num_samples, n_d, n_phi,num_samples_list,start_index,end_index );
+    
+    % Perform the optimization
+    options = optimoptions('fmincon', 'Display', 'iter', 'Algorithm', 'sqp', 'MaxIterations', 1000);
+    % options = optimoptions('fmincon', 'SpecifyObjectiveGradient', true, 'Algorithm', 'interior-point', 'Display', 'iter');
+    % options = optimoptions('fmincon', 'SpecifyObjectiveGradient', true, 'Algorithm', 'interior-point', 'Display', 'iter');
+    [x_in, f_var] = fmincon(objective_in, vector_variables_in, [], [], [], [], lb_in, ub_in, [], options);
+    % [optimal_variables, optimal_cost] = fmincon(objective_function, initial_guess, [], [], [], [], [], [], [], options);
+    % Reshape the optimized variables
+    variables_matrix = reshape(x_in, [], n_d + n_phi+2);
+    
+    % Combine the control points for all segments
+    
+    
+    % Calculate the Bézier curve segment points
+    curve_segment_points = calculate_curve_segment_points(variables_matrix, Start_points, End_points, num_segments, n_d, n_phi);
+end
 % Plot the results
 
 
@@ -274,14 +275,16 @@ curve_segment_points = calculate_curve_segment_points(variables_matrix, Start_po
     end
 
     curve = [];
-    for i = 1:num_segments
-    segment_control_points = curve_segment_points(:, :, i);
-    % Use num_samples_list for each segment (calculated dynamically based on path)
-    segment_curve = bezier_curve(segment_control_points, num_samples_list(i));
-    curve = [curve; segment_curve];
-    
+    if found_whole_path
+        for i = 1:num_segments
+        segment_control_points = curve_segment_points(:, :, i);
+        % Use num_samples_list for each segment (calculated dynamically based on path)
+        segment_curve = bezier_curve(segment_control_points, num_samples_list(i));
+        curve = [curve; segment_curve];
+        end
+        plot(curve(:, 1), curve(:, 2),'color', color3,'LineStyle','-' , 'LineWidth', 1.5, 'DisplayName','Bezier Curve');
     end
-    plot(curve(:, 1), curve(:, 2),'color', color3,'LineStyle','-' , 'LineWidth', 1.5, 'DisplayName','Bezier Curve');
+    
 
 
 
