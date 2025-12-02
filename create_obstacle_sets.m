@@ -13,14 +13,14 @@ rng('shuffle');
 
 x_range = 48;
 y_range = 27;
-x_scaled = 0.95*x_range;
-y_scaled = 0.95*y_range;
-x_margin = 0.025*x_range;  % 2.5% margin
-y_margin = 0.025*y_range;
+x_scaled = 0.9*x_range;
+y_scaled = 0.7*y_range;
+x_margin = 0.05*x_range;  % 5% margin
+y_margin = 0.15*y_range;
 number_of_pairs = 5;
 max_distance = sqrt(x_range^2 + y_range^2);
 output_folder = "/home/mahboobe/Desktop/game_generation_and_path_planning/new_games";
-output_folder = "C:\Users\Mahboobe\OneDrive - University of Calgary\code\game_creation_and_fits\new_game_set";
+output_folder = "C:\Users\Mahboobe\OneDrive - University of Calgary\code\game_creation_and_fits\final_games";
 
 
 % ============================================================================
@@ -30,7 +30,7 @@ output_folder = "C:\Users\Mahboobe\OneDrive - University of Calgary\code\game_cr
 % These values are used for all pair counts (2-5 pairs)
 % To change obstacle sizes, modify these two variables:
 min_radius = 2;  % Minimum obstacle radius (cm)
-max_radius = 4;  % Maximum obstacle radius (cm)
+max_radius = 3.5;  % Maximum obstacle radius (cm)
 % ============================================================================
 
 % ============================================================================
@@ -41,7 +41,7 @@ max_radius = 4;  % Maximum obstacle radius (cm)
 % - Maximum values: SCALE with number of pairs - adapts to available space
 %
 % MINIMUM VALUES (Fixed - same for all pairs 2-5):
-min_distance_between_obstacles = 1.5;  % Minimum gap between obstacles from different pairs (cm)
+min_distance_between_obstacles = 2;  % Minimum gap between obstacles from different pairs (cm)
 min_distance_between_obstacle_pairs = 2.0;  % Minimum gap between obstacles in same pair (cm)
 min_distance_to_end_and_start = 2.5;  % Minimum distance from start/end points (cm)
 min_distance_middle_points = 2.5;  % Minimum distance between middle points of pairs (cm)
@@ -65,7 +65,7 @@ max_distance_between_obstacle_pairs = 0.05* max_distance + 0.03*(max_distance/nu
 % Minimum values are already set above as fixed constants
 % (min_distance_between_obstacles, min_distance_between_obstacle_pairs, 
 %  min_distance_to_end_and_start, min_distance_middle_points)
-for mahboobe=1:100
+for mahboobe=1:150
 flag = true;
 
 
@@ -74,8 +74,10 @@ counter_2 =0;
 counter_3 = 0;
 counter_4 = 0;
 counter_5 = 0;
+counter_6 = 0;  % New counter for obstacle rejections
 while flag
     flag = false;
+    obstacle_flag = false;  % Flag for obstacle-only constraints
     
     % ============================================================================
     % OBSTACLE CENTER GENERATION (Improved Space Utilization)
@@ -151,7 +153,7 @@ while flag
         % Ensures obstacles in the same pair are at least min_distance_between_obstacle_pairs apart
         % This is the main constraint you want to keep
         if distance_between_obstacles < (min_distance_between_obstacle_pairs + 2*radius)
-            flag = true;
+            obstacle_flag = true;
             counter_1 = counter_1 + 1;
         end
         
@@ -161,7 +163,7 @@ while flag
         % Prevents obstacles in same pair from being too far apart
         % This is NECESSARY - without it, gates become too wide and games are too easy
         if distance_between_obstacles > (max_distance_between_obstacle_pairs + 2*radius)
-            flag = true;
+            obstacle_flag = true;
             counter_1 = counter_1 + 1;
         end
     end
@@ -172,7 +174,7 @@ while flag
     % Prevents bounding rectangles of different pairs from overlapping
     % This is NECESSARY to prevent pairs from being too close together
     if checkRectanglesForCollision(rectangles)
-        flag = true;
+        obstacle_flag = true;
         counter_2 = counter_2 + 1;
     end
 
@@ -202,7 +204,7 @@ while flag
             
             % Check if obstacles overlap (collision)
             if distance < (radius1 + radius2 + min_distance_between_obstacles)
-                flag = true;
+                obstacle_flag = true;
                 counter_3 = counter_3 + 1;
             end
         end
@@ -217,127 +219,244 @@ while flag
         % if distance_to_start >= (min_distance_to_end_and_start + obstacle_radius) && distance_to_end >= (min_distance_to_end_and_start + obstacle_radius)
         % else
         %     flag = true;
-        % end
+        %         end
     end
 
-
-    % setting start and end point
-
+    % ============================================================================
+    % CHECK IF OBSTACLES ARE VALID
+    % ============================================================================
+    % If obstacles failed constraints, skip start/end generation and try new obstacles
+    if obstacle_flag
+        flag = true;
+        counter_6 = counter_6 + 1;
+        continue;  % Skip to next iteration, regenerate obstacles
+    end
+    
+    % ============================================================================
+    % OBSTACLES ARE VALID - NOW TRY MULTIPLE START/END PLACEMENTS
+    % ============================================================================
+    % Try up to max_start_end_attempts different start/end positions
+    % Only regenerate obstacles if ALL start/end attempts fail
+    
+    max_start_end_attempts = 20;  % Try 20 different start/end placements
+    start_end_found = false;
+    
+    for attempt = 1:max_start_end_attempts
+    
+    % ============================================================================
+    % START AND END POINT GENERATION (Choose Method Below)
+    % ============================================================================
+    
+    % ============================================================================
+    % HYBRID START/END POINT GENERATION STRATEGY
+    % ============================================================================
+    % Uses 3 methods in order of preference to maximize success rate:
+    %
+    % METHOD 1 (Attempts 1-5): PERPENDICULAR LINE
+    %   - Creates elegant straight-line paths through all gates
+    %   - Best for visual quality and natural player flow
+    %   - Y calculated from perpendicular to gate line
+    %
+    % METHOD 2 (Attempts 6-15): GATE-ALIGNED
+    %   - Fallback if perpendicular approach fails constraints
+    %   - Y directly aligned with gate midpoint (reliable)
+    %   - Attempts 6-10: exact alignment
+    %   - Attempts 11-15: small variations (±1.5cm)
+    %
+    % METHOD 3 (Attempts 16-20): RANDOM
+    %   - Last resort for difficult configurations
+    %   - Y randomly placed in safe zone
+    %   - Ensures high success rate even for tight 5-pair games
+    %
+    % X positions progressively explore extended range (-3 to 0, 48 to 51)
+    % ============================================================================
+    
+    start_x_min = -3;  % Can extend 3cm before play area
+    start_x_max = 0;   % Up to play area start
+    end_x_min = x_range;  % From play area end (48)
+    end_x_max = x_range + 3;  % Can extend 3cm beyond play area (51)
+    start_end_y_margin = 2.0;  % Minimum margin from top/bottom edges (cm)
+    
+    % === START POINT - HYBRID APPROACH ===
     point1 = centers(1, :);
     point2 = centers(2, :);
+    midpoint_first = (point1 + point2) / 2;
     
-    
-    % Calculate the midpoint
-    midpoint = (point1 + point2) / 2;
-    
-    % Calculate the slope of the line connecting point1 and point2
+    % Calculate perpendicular line through first gate midpoint
     line_slope = (point2(2) - point1(2)) / (point2(1) - point1(1));
-    
-    % Calculate the y-intercept of the line connecting point1 and point2
-    line_intercept = point1(2) - line_slope * point1(1);
-    
-    % Calculate the slope of the perpendicular line
     perpendicular_slope = -1 / line_slope;
+    perpendicular_intercept = midpoint_first(2) - perpendicular_slope * midpoint_first(1);
     
-    % Calculate the y-intercept of the perpendicular line using the midpoint
-    perpendicular_intercept = midpoint(2) - perpendicular_slope * midpoint(1);
-    
-    % Calculate the intersection point of the perpendicular line with x = end_x
-    intersection_x = 0;
-    intersection_y = perpendicular_slope * intersection_x + perpendicular_intercept;
-    
-    
-
-    if intersection_y < 0 
-        intersection_y = 0;
-    elseif  intersection_y > y_range
-        intersection_y = y_range;
+    % X position varies by attempt
+    if attempt == 1
+        X_s_x = 0;  % At play area edge
+    elseif attempt <= 5
+        X_s_x = -1.5 + rand() * 1.5;  % Range: [-1.5, 0]
+    elseif attempt <= 10
+        X_s_x = start_x_min + rand() * 2;  % Range: [-3, -1]
+    else
+        X_s_x = start_x_min + rand() * (start_x_max - start_x_min);
     end
-
-    X_s = [intersection_x, intersection_y];
-    % setting end point
-
-
+    
+    % HYBRID Y-COORDINATE STRATEGY:
+    if attempt <= 5
+        % METHOD 1: Perpendicular line (creates straight paths)
+        X_s_y = perpendicular_slope * X_s_x + perpendicular_intercept;
+    elseif attempt <= 15
+        % METHOD 2: Gate-aligned (reliable fallback)
+        if attempt <= 10
+            % Exact alignment with gate
+            X_s_y = midpoint_first(2);
+        else
+            % Small variations around gate (±1.5cm)
+            variation = (rand() - 0.5) * 3.0;
+            X_s_y = midpoint_first(2) + variation;
+        end
+    else
+        % METHOD 3: Random in safe zone (last resort)
+        X_s_y = start_end_y_margin + (y_range - 2*start_end_y_margin) * rand();
+    end
+    
+    % Clamp to safe bounds
+    X_s_y = max(start_end_y_margin, min(y_range - start_end_y_margin, X_s_y));
+    X_s = [X_s_x, X_s_y];
+    
+    % === END POINT - HYBRID APPROACH ===
     point1 = centers(end, :);
     point2 = centers(end-1, :);
+    midpoint_last = (point1 + point2) / 2;
     
-    
-    % Calculate the midpoint
-    midpoint = (point1 + point2) / 2;
-    
-    % Calculate the slope of the line connecting point1 and point2
+    % Calculate perpendicular line through last gate midpoint
     line_slope = (point2(2) - point1(2)) / (point2(1) - point1(1));
-    
-    % Calculate the y-intercept of the line connecting point1 and point2
-    line_intercept = point1(2) - line_slope * point1(1);
-    
-    % Calculate the slope of the perpendicular line
     perpendicular_slope = -1 / line_slope;
+    perpendicular_intercept = midpoint_last(2) - perpendicular_slope * midpoint_last(1);
     
-    % Calculate the y-intercept of the perpendicular line using the midpoint
-    perpendicular_intercept = midpoint(2) - perpendicular_slope * midpoint(1);
-    
-    % Calculate the intersection point of the perpendicular line with x = end_x
-    intersection_x = x_range;
-    intersection_y = perpendicular_slope * intersection_x + perpendicular_intercept;
-
-    if intersection_y < 0 
-        intersection_y = 0;
-    elseif  intersection_y > y_range
-        intersection_y = y_range;
+    % X position varies by attempt
+    if attempt == 1
+        X_e_x = x_range;  % At play area edge
+    elseif attempt <= 5
+        X_e_x = x_range + rand() * 1.5;  % Range: [48, 49.5]
+    elseif attempt <= 10
+        X_e_x = x_range + 1 + rand() * 2;  % Range: [49, 51]
+    else
+        X_e_x = end_x_min + rand() * (end_x_max - end_x_min);
     end
-    X_e = [intersection_x, intersection_y];
-
+    
+    % HYBRID Y-COORDINATE STRATEGY:
+    if attempt <= 5
+        % METHOD 1: Perpendicular line (creates straight paths)
+        X_e_y = perpendicular_slope * X_e_x + perpendicular_intercept;
+    elseif attempt <= 15
+        % METHOD 2: Gate-aligned (reliable fallback)
+        if attempt <= 10
+            % Exact alignment with gate
+            X_e_y = midpoint_last(2);
+        else
+            % Small variations around gate (±1.5cm)
+            variation = (rand() - 0.5) * 3.0;
+            X_e_y = midpoint_last(2) + variation;
+        end
+    else
+        % METHOD 3: Random in safe zone (last resort)
+        X_e_y = start_end_y_margin + (y_range - 2*start_end_y_margin) * rand();
+    end
+    
+    % Clamp to safe bounds
+    X_e_y = max(start_end_y_margin, min(y_range - start_end_y_margin, X_e_y));
+    X_e = [X_e_x, X_e_y];
 
     % ============================================================================
-    % CONSTRAINT CHECK 6: Start/End Distance (COMMENTED OUT - Testing)
+    % CONSTRAINT CHECK 6: Start/End Points Not Inside Rectangles (ACTIVE)
+    % ============================================================================
+    % Ensures start and end points are not inside any obstacle bounding boxes
+    % AND have a safety buffer around the boxes
+    % This is ESSENTIAL to prevent start/end points from being blocked
+    
+    start_end_valid = true;  % Assume valid until proven otherwise
+    
+    % Buffer distance around rectangles (cm) - adjust this value as needed
+    rectangle_buffer = 2.5;  % Same as min_distance_to_end_and_start for consistency
+    
+    for i = 1:numSets
+        rect = rectangles(i, :);
+        % Expand rectangle by buffer distance
+        expanded_rect = [rect(1) - rectangle_buffer, ...
+                         rect(2) - rectangle_buffer, ...
+                         rect(3) + 2*rectangle_buffer, ...
+                         rect(4) + 2*rectangle_buffer];
+        
+        % Check if start point is inside expanded rectangle
+        if isPointInsideRectangle(X_s, expanded_rect)
+            start_end_valid = false;
+            counter_4 = counter_4 + 1;
+            break;
+        end
+        % Check if end point is inside expanded rectangle
+        if isPointInsideRectangle(X_e, expanded_rect)
+            start_end_valid = false;
+            counter_4 = counter_4 + 1;
+            break;
+        end
+    end
+
+    % ============================================================================
+    % CONSTRAINT CHECK 7: Start/End Distance from Obstacles (ACTIVE)
     % ============================================================================
     % Ensures obstacles are not too close to start/end points
-    % COMMENTED: User testing if this constraint is necessary
-    % for i = 1:num_obstacles
-    %     obstacle_position = centers(i, :);
-    %     obstacle_radius = radii(i);
-    %     % Calculate the distance to the start and end points
-    %     distance_to_start = norm(X_s - obstacle_position);
-    %     distance_to_end = norm(X_e - obstacle_position);
-    %     
-    %     % Check first obstacle's distance to start point (with range constraint)
-    %     if i == 1
-    %         if distance_to_start < (min_distance_to_end_and_start + obstacle_radius) || distance_to_start > (max_distance_to_end_and_start + obstacle_radius)
-    %             flag = true;
-    %             counter_4 = counter_4 + 1;
-    %         end
-    %     % Check last obstacle's distance to end point (with range constraint)
-    %     elseif i == num_obstacles
-    %         if distance_to_end < (min_distance_to_end_and_start + obstacle_radius) || distance_to_end > (max_distance_to_end_and_start + obstacle_radius)
-    %             flag = true;
-    %             counter_4 = counter_4 + 1;
-    %         end
-    %     else
-    %         % For all other obstacles, ensure they're not too close to start/end
-    %         % (minimum distance check only, no maximum constraint)
-    %         if distance_to_start < (min_distance_to_end_and_start + obstacle_radius)
-    %             flag = true;
-    %             counter_4 = counter_4 + 1;
-    %         end
-    %         if distance_to_end < (min_distance_to_end_and_start + obstacle_radius)
-    %             flag = true;
-    %             counter_4 = counter_4 + 1;
-    %         end
-    %     end
-    % end
+    % This is RECOMMENDED for fair gameplay
+    if start_end_valid  % Only check if still valid
+        for i = 1:num_obstacles
+            obstacle_position = centers(i, :);
+            obstacle_radius = radii(i);
+            % Calculate the distance to the start and end points
+            distance_to_start = norm(X_s - obstacle_position);
+            distance_to_end = norm(X_e - obstacle_position);
+            
+            % For all obstacles, ensure they're not too close to start/end
+            % (minimum distance check to ensure accessibility)
+            if distance_to_start < (min_distance_to_end_and_start + obstacle_radius)
+                start_end_valid = false;
+                counter_5 = counter_5 + 1;
+                break;
+            end
+            if distance_to_end < (min_distance_to_end_and_start + obstacle_radius)
+                start_end_valid = false;
+                counter_5 = counter_5 + 1;
+                break;
+            end
+        end
+    end
+    
+    % ============================================================================
+    % CHECK IF THIS START/END PLACEMENT IS VALID
+    % ============================================================================
+    if start_end_valid
+        start_end_found = true;
+        break;  % Exit start/end attempt loop, we found valid points!
+    end
+    
+    end  % End of start/end attempt loop
+    
+    % ============================================================================
+    % IF NO VALID START/END FOUND AFTER ALL ATTEMPTS
+    % ============================================================================
+    if ~start_end_found
+        flag = true;  % Regenerate obstacles
+        counter_6 = counter_6 + 1;
+    end
 
 end
 
 
 
-% Initialize figure
-figure;
+% Initialize figure (invisible - no popup)
+figure('Visible', 'off');
 hold on;
 axis equal;
 colors = ['r', 'g', 'b','c', 'k', 'm']; % Colors for different sets
+
 for i = 1:numSets
-        % Plotting circles
+    % Plotting circles
     startIndex = (i - 1) * numCentersPerSet + 1;
     endIndex = i * numCentersPerSet;
     set_centers = centers(startIndex:endIndex, :);
@@ -357,11 +476,12 @@ for i = 1:numSets
 
     % Plotting rectangle
     rectangle('Position', [xMin, yMin, width, height], 'EdgeColor', colors(i), 'LineWidth', 2);
-
 end
 
+% Plot start and end points
 plot(X_s(1,1), X_s(1,2), 'ro', 'MarkerSize', 10);
 plot(X_e(1,1), X_e(1,2), 'ro', 'MarkerSize', 10);
+
 % Label the plot
 xlabel('X-coordinate');
 ylabel('Y-coordinate');
@@ -425,6 +545,9 @@ figure_filename = sprintf('set_%d_%dpairs.png', next_set_number, number_of_pairs
 figure_path = fullfile(pairs_folder, figure_filename);
 saveas(gcf, figure_path);
 
+% Close figure to free memory (since we're in a loop)
+close(gcf);
+
 % Display information
 fprintf('\n=== Obstacle Set Created ===\n');
 fprintf('Number of Pairs: %d\n', number_of_pairs);
@@ -433,11 +556,11 @@ fprintf('Folder: %s\n', pairs_folder);
 fprintf('File saved: %s\n', filename);
 fprintf('Figure saved: %s\n', figure_filename);
 fprintf('\nRejection Counters:\n');
-fprintf('  Middle points too close: %d\n', counter_5);
 fprintf('  Distance between pairs: %d\n', counter_1);
 fprintf('  Rectangle collisions: %d\n', counter_2);
 fprintf('  Obstacle intersections: %d\n', counter_3);
-fprintf('  Start/End distance: %d\n', counter_4);
+fprintf('  Start/End constraints: %d\n', counter_4 + counter_5);
+fprintf('  Total obstacle rejections: %d\n', counter_6);
 fprintf('\n');
 
 disp(mahboobe)
