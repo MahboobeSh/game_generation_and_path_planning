@@ -13,19 +13,19 @@ color7 = [255, 120, 0] / 255;   % Orange color (#FF7800)
 color8 = [57, 226, 213] / 255;  % Aqua color (#39E2D5)
 color9 = [8, 61, 119] / 255;    % Navy blue color (#083D77)
 
-for k = [1:100]
+for k = [124:125]
     found_whole_path = true;
     step_size = 0.25;
     m =4;
 
     % Load the data from the .mat file
     set_number = k;
-    pairs_number =3;
+    pairs_number =5;
     % base_folder = 'C:\Users\mahbo\OneDrive - University of Calgary\code\game_creation_and_fits';
     base_folder = '/home/mahboobe/Desktop/game_generation_and_path_planning/game/';
     base_folder = '/home/mahboobe/Desktop/game_generation_and_path_planning/selected_games/';
     base_folder = '/home/mahboobe/Desktop/game_generation_and_path_planning/new_games/';
-    base_folder='C:\Users\mahbo\OneDrive - University of Calgary\code\game_creation_and_fits\new_games\new_games\';
+    base_folder='C:\Users\mahboobe\OneDrive - University of Calgary\code\game_creation_and_fits\new_games\new_games\';
     pairs_folder = fullfile(base_folder, sprintf('%dpairs', pairs_number));
     set_name = sprintf('set_%d_%dpairs.mat', set_number, pairs_number);
     fullFileName = fullfile(pairs_folder, set_name);
