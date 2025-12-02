@@ -12,6 +12,7 @@ function [cost, grad] = optimize_bezier_to_astar(variables, num_segments, start_
     for i = 1:num_segments
         segment_control_points = curve_segment_points(:, :, i);
         segment_curve = bezier_curve(segment_control_points, num_samples_list(i));
+        % segment_curve = bezier_equidistant(segment_control_points, num_samples_list(i));
         composite_curve = [composite_curve; segment_curve];
         min_distance_vector_temp = [];
         for j = 1: size(segment_curve,1)

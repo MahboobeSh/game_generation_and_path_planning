@@ -13,14 +13,14 @@ color7 = [255, 120, 0] / 255;   % Orange color (#FF7800)
 color8 = [57, 226, 213] / 255;  % Aqua color (#39E2D5)
 color9 = [8, 61, 119] / 255;    % Navy blue color (#083D77)
 
-for k = [124:125]
+for k = [123]
     found_whole_path = true;
     step_size = 0.25;
     m =4;
 
     % Load the data from the .mat file
     set_number = k;
-    pairs_number =5;
+    pairs_number =4;
     % base_folder = 'C:\Users\mahbo\OneDrive - University of Calgary\code\game_creation_and_fits';
     base_folder = '/home/mahboobe/Desktop/game_generation_and_path_planning/game/';
     base_folder = '/home/mahboobe/Desktop/game_generation_and_path_planning/selected_games/';
@@ -116,16 +116,24 @@ d_lb_in = ones(num_segments+1, 1) * min_d;
 phi_ub_in = pi * ones(num_segments+1, 1);
 phi_lb_in = -pi * ones(num_segments+1, 1);
 
+n_d = 3;
+n_phi = 2;
+limit_factor = 1;
+
+
 lb_in = [d_lb_in; d_lb_in; d_lb_in;phi_lb_in; phi_lb_in;];
 ub_in = [d_ub_in; d_ub_in;d3_ub_in; phi_ub_in;phi_ub_in];
+
+if n_d == 3 && n_phi == 2
+    lb_in = [d_lb_in; d_lb_in; d_lb_in;d_lb_in;phi_lb_in; phi_lb_in;phi_lb_in;];
+    ub_in = [d_ub_in; d_ub_in;d3_ub_in;d3_ub_in; phi_ub_in;phi_ub_in;phi_ub_in;];
+end
 % lb_in = [d_lb_in; d_lb_in; phi_lb_in; phi_lb_in];
 % ub_in = [d_ub_in; d_ub_in; phi_ub_in; phi_ub_in];
 temp_lb_in = lb_in;
 temp_ub_in = ub_in;
 
-n_d = 2;
-n_phi = 1;
-limit_factor = 1;
+
 
 % Initial optimization variables
 initial_d_in = ((d_lb_in + d_ub_in) / 2).* ones(num_segments+1, n_d +1);
