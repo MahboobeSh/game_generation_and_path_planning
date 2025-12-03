@@ -12,7 +12,7 @@ function list_games_by_path_length()
     
     % Base folder for games
     base_folder = '/home/mahboobe/Desktop/game_generation_and_path_planning/new_games/';
-    base_folder = 'C:\Users\mahbo\OneDrive - University of Calgary\code\game_creation_and_fits\new_games\new_games'
+    base_folder = 'C:\Users\mahboobe\OneDrive - University of Calgary\code\game_creation_and_fits\new_games\new_games'
     
     % Folders to scan
     folders_to_scan = {'3pairs/fit', '4pairs/fit', '5pairs/fit'};

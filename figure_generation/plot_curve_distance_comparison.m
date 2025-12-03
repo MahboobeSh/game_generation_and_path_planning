@@ -51,8 +51,8 @@ if n_cols == 5
     n_d = 2;
     n_phi = 1;
 else
-    n_d = 2;
-    n_phi = 1;
+    n_d = 3;
+    n_phi = 2;
 end
 
 % Get num_samples_list

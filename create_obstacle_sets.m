@@ -248,25 +248,22 @@ while flag
     % ============================================================================
     
     % ============================================================================
-    % HYBRID START/END POINT GENERATION STRATEGY
+    % MULTI-ANGLE START/END POINT GENERATION STRATEGY
     % ============================================================================
-    % Uses 3 methods in order of preference to maximize success rate:
+    % Tries different approach angles relative to gate line:
     %
-    % METHOD 1 (Attempts 1-5): PERPENDICULAR LINE
-    %   - Creates elegant straight-line paths through all gates
-    %   - Best for visual quality and natural player flow
-    %   - Y calculated from perpendicular to gate line
+    % METHOD 1 (Attempts 1-5): ANGLED APPROACH LINES
+    %   Attempt 1: 90° (perpendicular - classic straight path)
+    %   Attempt 2: 80° (slight angle)
+    %   Attempt 3: 75° (moderate angle)
+    %   Attempt 4: 60° (steeper angle)
+    %   Attempt 5: 45° (diagonal approach)
     %
     % METHOD 2 (Attempts 6-15): GATE-ALIGNED
-    %   - Fallback if perpendicular approach fails constraints
     %   - Y directly aligned with gate midpoint (reliable)
-    %   - Attempts 6-10: exact alignment
-    %   - Attempts 11-15: small variations (±1.5cm)
     %
     % METHOD 3 (Attempts 16-20): RANDOM
-    %   - Last resort for difficult configurations
     %   - Y randomly placed in safe zone
-    %   - Ensures high success rate even for tight 5-pair games
     %
     % X positions progressively explore extended range (-3 to 0, 48 to 51)
     % ============================================================================
@@ -277,15 +274,17 @@ while flag
     end_x_max = x_range + 3;  % Can extend 3cm beyond play area (51)
     start_end_y_margin = 2.0;  % Minimum margin from top/bottom edges (cm)
     
-    % === START POINT - HYBRID APPROACH ===
+    % Define approach angles (in degrees from perpendicular)
+    % 90° = perpendicular, smaller = more angled toward horizontal
+    approach_angles = [90, 80, 75, 60, 45];  % degrees
+    
+    % === START POINT - MULTI-ANGLE APPROACH ===
     point1 = centers(1, :);
     point2 = centers(2, :);
     midpoint_first = (point1 + point2) / 2;
     
-    % Calculate perpendicular line through first gate midpoint
-    line_slope = (point2(2) - point1(2)) / (point2(1) - point1(1));
-    perpendicular_slope = -1 / line_slope;
-    perpendicular_intercept = midpoint_first(2) - perpendicular_slope * midpoint_first(1);
+    % Calculate gate angle
+    gate_angle = atan2(point2(2) - point1(2), point2(1) - point1(1));
     
     % X position varies by attempt
     if attempt == 1
@@ -298,10 +297,20 @@ while flag
         X_s_x = start_x_min + rand() * (start_x_max - start_x_min);
     end
     
-    % HYBRID Y-COORDINATE STRATEGY:
+    % Y-COORDINATE STRATEGY:
     if attempt <= 5
-        % METHOD 1: Perpendicular line (creates straight paths)
-        X_s_y = perpendicular_slope * X_s_x + perpendicular_intercept;
+        % METHOD 1: Angled approach lines (try different angles)
+        angle_idx = attempt;
+        approach_deg = approach_angles(angle_idx);
+        approach_rad = deg2rad(approach_deg);
+        
+        % Calculate approach line angle (perpendicular + deviation)
+        % For start point, we want line going LEFT from midpoint
+        approach_line_angle = gate_angle + approach_rad;
+        approach_slope = tan(approach_line_angle);
+        approach_intercept = midpoint_first(2) - approach_slope * midpoint_first(1);
+        
+        X_s_y = approach_slope * X_s_x + approach_intercept;
     elseif attempt <= 15
         % METHOD 2: Gate-aligned (reliable fallback)
         if attempt <= 10
@@ -321,15 +330,13 @@ while flag
     X_s_y = max(start_end_y_margin, min(y_range - start_end_y_margin, X_s_y));
     X_s = [X_s_x, X_s_y];
     
-    % === END POINT - HYBRID APPROACH ===
+    % === END POINT - MULTI-ANGLE APPROACH ===
     point1 = centers(end, :);
     point2 = centers(end-1, :);
     midpoint_last = (point1 + point2) / 2;
     
-    % Calculate perpendicular line through last gate midpoint
-    line_slope = (point2(2) - point1(2)) / (point2(1) - point1(1));
-    perpendicular_slope = -1 / line_slope;
-    perpendicular_intercept = midpoint_last(2) - perpendicular_slope * midpoint_last(1);
+    % Calculate gate angle
+    gate_angle_end = atan2(point2(2) - point1(2), point2(1) - point1(1));
     
     % X position varies by attempt
     if attempt == 1
@@ -342,10 +349,20 @@ while flag
         X_e_x = end_x_min + rand() * (end_x_max - end_x_min);
     end
     
-    % HYBRID Y-COORDINATE STRATEGY:
+    % Y-COORDINATE STRATEGY:
     if attempt <= 5
-        % METHOD 1: Perpendicular line (creates straight paths)
-        X_e_y = perpendicular_slope * X_e_x + perpendicular_intercept;
+        % METHOD 1: Angled approach lines (try different angles)
+        angle_idx = attempt;
+        approach_deg = approach_angles(angle_idx);
+        approach_rad = deg2rad(approach_deg);
+        
+        % Calculate approach line angle (perpendicular + deviation)
+        % For end point, we want line going RIGHT from midpoint
+        approach_line_angle = gate_angle_end + approach_rad;
+        approach_slope = tan(approach_line_angle);
+        approach_intercept = midpoint_last(2) - approach_slope * midpoint_last(1);
+        
+        X_e_y = approach_slope * X_e_x + approach_intercept;
     elseif attempt <= 15
         % METHOD 2: Gate-aligned (reliable fallback)
         if attempt <= 10
