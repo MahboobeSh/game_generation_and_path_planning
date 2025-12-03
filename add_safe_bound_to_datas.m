@@ -9,13 +9,13 @@ clear
 % files = dir(fullfile(base_folder, filePattern));
 
 %for g = 1:numel(files)
-for k=1:15
+for k=200
 % for g = 1:2
 % for g = 1
 
     set_number = k;
-    base_folder = 'C:\Users\mahbo\OneDrive - University of Calgary\code\game_creation_and_fits';
-    set_name = sprintf('set_%d.mat', set_number);
+    base_folder = 'C:\Users\mahbo\OneDrive - University of Calgary\code\game_creation_and_fits\new_games\selected_games\4pairs\fit\';
+    set_name = sprintf('set_%d_4pairs.mat', set_number);
     fullFileName = fullfile(base_folder, set_name);
 
     % Get the full source file path
@@ -26,9 +26,10 @@ for k=1:15
     
     % Load the A* path data
     path_data = load(fit_results_file);
-    percent = 0.5;
-    threshold= 2;
-    safe_bound = calculate_safe_bound(path_data.curve,path_data.obstacle,path_data.obstacle_radious,percent, threshold);
-
-    save(fit_results_file, 'safe_bound', 'percent', 'threshold', '-append');
+    percent = 0.75;
+    threshold= 10;
+    safe_bound = calculate_safe_bound(path_data.curve_equalized,path_data.obstacle,path_data.obstacle_radious,percent, threshold);
+    title_text = sprintf('percent = %f , Threshold = %f', percent, threshold);
+    show_figure_with_safe_bound(path_data.curve_equalized,path_data.obstacle,path_data.obstacle_radious,safe_bound, title_text)
+    % save(fit_results_file, 'safe_bound', 'percent', 'threshold', '-append');
 end

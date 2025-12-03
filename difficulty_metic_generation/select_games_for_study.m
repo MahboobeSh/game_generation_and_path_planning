@@ -1,12 +1,12 @@
 % SELECT_GAMES_FOR_STUDY - Uses Extended Steering Law (Minimal Rehab Metrics)
 
 % --- CONFIGURATION ---
-base_folder = 'C:\Users\Mahboobe\OneDrive - University of Calgary\code\game_creation_and_fits\new_games\new_games';
+base_folder = 'C:\Users\Mahbo\OneDrive - University of Calgary\code\game_creation_and_fits\new_games\selected_games';
 folders_to_scan = {'3pairs/fit', '4pairs/fit', '5pairs/fit'};
 
 % RELAXED Length Constraints
 target_len_GLOBAL = 80; 
-tolerance_cm = 5 + 0.1; 
+tolerance_cm = 8 + 0.1; 
 
 min_len = target_len_GLOBAL - tolerance_cm; % ~70 cm
 max_len = target_len_GLOBAL + tolerance_cm; % ~90 cm

@@ -12,7 +12,7 @@ function list_games_by_path_length()
     
     % Base folder for games
     base_folder = '/home/mahboobe/Desktop/game_generation_and_path_planning/new_games/';
-    base_folder = 'C:\Users\mahboobe\OneDrive - University of Calgary\code\game_creation_and_fits\new_games\new_games'
+    base_folder = 'C:\Users\mahbo\OneDrive - University of Calgary\code\game_creation_and_fits\new_games\selected_games'
     
     % Folders to scan
     folders_to_scan = {'3pairs/fit', '4pairs/fit', '5pairs/fit'};
@@ -62,7 +62,9 @@ function list_games_by_path_length()
                 end
                 
                 % Get path (prefer curve over path)
-                if isfield(data, 'curve') && ~isempty(data.curve)
+                if isfield(data, 'curve_equalized') && ~isempty(data.curve)
+                    path_to_use = data.curve_equalized;
+                elseif isfield(data, 'curve') && ~isempty(data.curve)
                     path_to_use = data.curve;
                 elseif isfield(data, 'path') && ~isempty(data.path)
                     path_to_use = data.path;

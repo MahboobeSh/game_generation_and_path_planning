@@ -12,20 +12,22 @@ color6 = [255, 0, 140] / 255;   % Magenta color (#FF008C)
 color7 = [255, 120, 0] / 255;   % Orange color (#FF7800)
 color8 = [57, 226, 213] / 255;  % Aqua color (#39E2D5)
 color9 = [8, 61, 119] / 255;    % Navy blue color (#083D77)
-
-for k = [123]
+% [16,26,54,77,83,96] 5 pairs
+%[2,25,50,70,88,110,112,154,182,191,200,203,205,206,216] 4pairs
+% [16,18,53,93,99]
+for k = [16]
     found_whole_path = true;
     step_size = 0.25;
     m =4;
 
     % Load the data from the .mat file
     set_number = k;
-    pairs_number =4;
+    pairs_number =3;
     % base_folder = 'C:\Users\mahbo\OneDrive - University of Calgary\code\game_creation_and_fits';
     base_folder = '/home/mahboobe/Desktop/game_generation_and_path_planning/game/';
     base_folder = '/home/mahboobe/Desktop/game_generation_and_path_planning/selected_games/';
     base_folder = '/home/mahboobe/Desktop/game_generation_and_path_planning/new_games/';
-    base_folder='C:\Users\mahboobe\OneDrive - University of Calgary\code\game_creation_and_fits\new_games\new_games\';
+    base_folder='C:\Users\mahbo\OneDrive - University of Calgary\code\game_creation_and_fits\new_games\selected_games\';
     pairs_folder = fullfile(base_folder, sprintf('%dpairs', pairs_number));
     set_name = sprintf('set_%d_%dpairs.mat', set_number, pairs_number);
     fullFileName = fullfile(pairs_folder, set_name);
@@ -182,6 +184,13 @@ if found_whole_path
     
     % Perform the optimization
     options = optimoptions('fmincon', 'Display', 'iter', 'Algorithm', 'sqp', 'MaxIterations', 1000);
+    options = optimoptions('fmincon', ...
+    'Display', 'iter', ...
+    'Algorithm', 'sqp', ...
+    'MaxIterations', 2000, ...
+    'MaxFunctionEvaluations', 50000, ...
+    'OptimalityTolerance', 1e-4, ...
+    'StepTolerance', 1e-6);
     % options = optimoptions('fmincon', 'SpecifyObjectiveGradient', true, 'Algorithm', 'interior-point', 'Display', 'iter');
     % options = optimoptions('fmincon', 'SpecifyObjectiveGradient', true, 'Algorithm', 'interior-point', 'Display', 'iter');
     [x_in, f_var] = fmincon(objective_in, vector_variables_in, [], [], [], [], lb_in, ub_in, [], options);
@@ -194,6 +203,7 @@ if found_whole_path
     
     % Calculate the Bézier curve segment points
     curve_segment_points = calculate_curve_segment_points(variables_matrix, Start_points, End_points, num_segments, n_d, n_phi);
+    [curve_equalized, curve_equalized_info] = generate_equalized_bezier_curve(curve_segment_points, step_size);
 end
 % Plot the results
 
@@ -355,7 +365,7 @@ end
     if found_whole_path
         save(fit_fullFileName, 'X_e', 'X_s', 'obstacle', 'obstacle_radious', 'x_range', 'y_range', 'number_of_pairs', ...
              'Start_points', 'End_points', 'path', 'step_size', 'm', 'avoid_radius', ...
-             'visited_nodes', 'curve', 'curve_segment_points', 'variables_matrix', 'num_samples_list');
+             'visited_nodes', 'curve', 'curve_segment_points', 'variables_matrix', 'num_samples_list','curve_equalized', 'curve_equalized_info');
     end
     disp('Pathfinding completed.');
     % Convert to a string suitable for a filename (e.g., '2024-03-11_15-30-00')
