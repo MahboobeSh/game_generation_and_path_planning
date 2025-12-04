@@ -5,10 +5,10 @@ clc;
 clear;
 
 % ============================================================================
-% EXAMPLE 1: Validate a specific set
+% EXAMPLE 1: Validate a specific st
 % ============================================================================
-set_number = 44;      % The set number to validate
-pairs_number = 3;    % Number of pairs in the set
+set_number = 921;      % The set number to validate
+pairs_number = 5;    % Number of pairs in the set
 
 % Optional: specify base folder (if different from default)
 base_folder = 'C:\Users\mahbo\OneDrive - University of Calgary\code\game_creation_and_fits\new_games\selected_games_2';

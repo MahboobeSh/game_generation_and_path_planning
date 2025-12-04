@@ -53,7 +53,8 @@ function visualize_rehab_metrics(set_numbers, pairs_numbers, comparison_mode)
     end
     
     base_path = 'C:\Users\Mahboobe\OneDrive - University of Calgary\code\game_creation_and_fits\new_games\new_games\';
-
+    base_path = '/home/mahboobe/Desktop/game_generation_and_path_planning/new_games/selected_games_2';
+    
     fprintf('\n========================================\n');
     fprintf('REHABILITATION METRICS VISUALIZATION\n');
     if strcmp(comparison_mode, 'both')
@@ -109,7 +110,10 @@ function visualize_rehab_metrics(set_numbers, pairs_numbers, comparison_mode)
             % Generate equalized curve if needed
             if strcmp(comparison_mode, 'equalized') || strcmp(comparison_mode, 'both')
                 % Generate equalized curve if control points are available
-                if isfield(data, 'curve_segment_points') && ~isempty(data.curve_segment_points)
+                if isfield(data, 'curve_equalized') 
+                    path_equalized = data.curve_equalized;
+                
+                elseif isfield(data, 'curve_segment_points') && ~isempty(data.curve_segment_points)
                     [path_equalized, ~] = generate_equalized_bezier_curve(data.curve_segment_points, step_size);
                 else
                     % If no control points, generate them

@@ -2,7 +2,7 @@
 %
 % STRATEGY: TIGHT CLUSTERING WITH MAXIMUM SEPARATION
 % - EASY cluster: Bottom 15% of games (tight group of easiest)
-% - MEDIUM cluster: 45-55th percentile (tight group around median)
+% - MEDIUM cluster: 40-60th percentile (tight group around median)
 % - HARD cluster: Top 15% of games (tight group of hardest)
 % - Games within each cluster are CLOSE together (similar difficulty)
 % - GAPS between clusters ensure maximum separation
@@ -15,11 +15,13 @@
 % --- CONFIGURATION ---
 base_folder = 'C:\Users\Mahbo\OneDrive - University of Calgary\code\game_creation_and_fits\new_games\selected_games_2';
 base_folder = '/home/mahboobe/Desktop/game_generation_and_path_planning/new_games/selected_games_2';
+% base_folder = '/home/mahboobe/Desktop/game_generation_and_path_planning/new_games/new_games';
 folders_to_scan = {'3pairs/fit', '4pairs/fit', '5pairs/fit'};
+% folders_to_scan = {'5pairs/fit',};
 
 % RELAXED Length Constraints
 target_len_GLOBAL = 80; 
-tolerance_cm = 7 + 0.1; 
+tolerance_cm = 0.15 + 0.1; 
 
 min_len = target_len_GLOBAL - tolerance_cm; % ~70 cm
 max_len = target_len_GLOBAL + tolerance_cm; % ~90 cm
@@ -116,19 +118,19 @@ y_vals = [all_games.K_TotalRotation];
 
 % Auto-Scale Map Zones for TIGHT clusters
 x_15 = prctile(x_vals, 15);  % Easy cluster boundary
-x_45 = prctile(x_vals, 45);  % Medium cluster start
-x_55 = prctile(x_vals, 55);  % Medium cluster end
+x_40 = prctile(x_vals, 40);  % Medium cluster start
+x_60 = prctile(x_vals, 60);  % Medium cluster end
 x_85 = prctile(x_vals, 85);  % Hard cluster boundary
 x_max = max(x_vals) * 1.1;
 y_15 = prctile(y_vals, 15); 
-y_45 = prctile(y_vals, 45); 
-y_55 = prctile(y_vals, 55); 
+y_40 = prctile(y_vals, 40); 
+y_60 = prctile(y_vals, 60); 
 y_85 = prctile(y_vals, 85); 
 y_max = max(y_vals) * 1.1;
 
 % Draw TIGHT Zones with gaps
 fill([0 0 x_15 x_15], [0 y_15 y_15 0], [0.8 1 0.8], 'EdgeColor', 'none', 'FaceAlpha', 0.3); % Easy cluster
-fill([x_45 x_45 x_55 x_55], [y_45 y_55 y_55 y_45], [1 1 0.8], 'EdgeColor', 'none', 'FaceAlpha', 0.3); % Medium cluster
+fill([x_40 x_40 x_60 x_60], [y_40 y_60 y_60 y_40], [1 1 0.8], 'EdgeColor', 'none', 'FaceAlpha', 0.3); % Medium cluster
 fill([x_85 x_85 x_max x_max], [y_85 y_max y_max y_85], [1 0.8 0.8], 'EdgeColor', 'none', 'FaceAlpha', 0.3); % Hard cluster
 
 gscatter(x_vals, y_vals, [all_games.pairs], 'bgr', 'o+^', 8);
@@ -148,8 +150,8 @@ hold on;
 
 % Define cluster boundaries
 thresh_easy_max = prctile(comp_scores, 15);
-thresh_med_min = prctile(comp_scores, 45);
-thresh_med_max = prctile(comp_scores, 55);
+thresh_med_min = prctile(comp_scores, 40);
+thresh_med_max = prctile(comp_scores, 60);
 thresh_hard_min = prctile(comp_scores, 85);
 
 % Color code bars based on cluster thresholds
@@ -167,8 +169,8 @@ for k = 1:length(sorted_scores)
 end
 
 yline(thresh_easy_max, '--g', 'Easy Cluster Max (15%ile)', 'LineWidth', 2);
-yline(thresh_med_min, '--', 'Color', [0.8 0.8 0], 'LineWidth', 1.5, 'Label', 'Med Min (45%ile)');
-yline(thresh_med_max, '--', 'Color', [0.8 0.8 0], 'LineWidth', 1.5, 'Label', 'Med Max (55%ile)');
+yline(thresh_med_min, '--', 'Color', [0.8 0.8 0], 'LineWidth', 1.5, 'Label', 'Med Min (40%ile)');
+yline(thresh_med_max, '--', 'Color', [0.8 0.8 0], 'LineWidth', 1.5, 'Label', 'Med Max (60%ile)');
 yline(thresh_hard_min, '--r', 'Hard Cluster Min (85%ile)', 'LineWidth', 2);
 
 title('Composite Scores with Tight Clusters & Gaps', 'FontSize', 12, 'FontWeight', 'bold');
@@ -192,8 +194,8 @@ histogram(comp_scores, 15, 'FaceColor', [0.5 0.7 0.9], 'EdgeColor', 'k');
 hold on;
 % Show cluster boundaries
 xline(prctile(comp_scores, 15), '--g', 'Easy Max', 'LineWidth', 2, 'LabelVerticalAlignment', 'bottom');
-xline(prctile(comp_scores, 45), '--y', 'Med Min', 'LineWidth', 2, 'LabelVerticalAlignment', 'bottom');
-xline(prctile(comp_scores, 55), '--y', 'Med Max', 'LineWidth', 2, 'LabelVerticalAlignment', 'top');
+xline(prctile(comp_scores, 40), '--y', 'Med Min', 'LineWidth', 2, 'LabelVerticalAlignment', 'bottom');
+xline(prctile(comp_scores, 60), '--y', 'Med Max', 'LineWidth', 2, 'LabelVerticalAlignment', 'top');
 xline(prctile(comp_scores, 85), '--r', 'Hard Min', 'LineWidth', 2, 'LabelVerticalAlignment', 'top');
 xlabel('Composite Score (ID)', 'FontSize', 11);
 ylabel('Number of Games', 'FontSize', 11);
@@ -208,8 +210,8 @@ colors_cat = [0.2 0.8 0.2; 0.9 0.9 0.2; 0.8 0.2 0.2]; % Green, Yellow, Red
 
 % Define cluster boundaries
 thresh_easy_max = prctile(comp_scores, 15);
-thresh_med_min = prctile(comp_scores, 45);
-thresh_med_max = prctile(comp_scores, 55);
+thresh_med_min = prctile(comp_scores, 40);
+thresh_med_max = prctile(comp_scores, 60);
 thresh_hard_min = prctile(comp_scores, 85);
 
 hold on;
@@ -249,8 +251,8 @@ grid on;
 % SUBPLOT 6: Box plot of metrics by difficulty cluster
 subplot(2, 3, 6);
 thresh_easy_max = prctile(comp_scores, 15);
-thresh_med_min = prctile(comp_scores, 45);
-thresh_med_max = prctile(comp_scores, 55);
+thresh_med_min = prctile(comp_scores, 40);
+thresh_med_max = prctile(comp_scores, 60);
 thresh_hard_min = prctile(comp_scores, 85);
 
 difficulty_cat = cell(size(comp_scores));
@@ -280,14 +282,14 @@ fprintf('Path length range: %.1f - %.1f cm\n\n', min_len, max_len);
 
 % Define cluster boundaries
 thresh_easy_max = prctile(comp_scores, 15);
-thresh_med_min = prctile(comp_scores, 45);
-thresh_med_max = prctile(comp_scores, 55);
+thresh_med_min = prctile(comp_scores, 40);
+thresh_med_max = prctile(comp_scores, 60);
 thresh_hard_min = prctile(comp_scores, 85);
 
 fprintf('TIGHT CLUSTER BOUNDARIES:\n');
 fprintf('  EASY cluster:   scores <= %.2f (bottom 15%%)\n', thresh_easy_max);
 fprintf('  GAP:            scores %.2f - %.2f\n', thresh_easy_max, thresh_med_min);
-fprintf('  MEDIUM cluster: scores %.2f - %.2f (45-55%%ile)\n', thresh_med_min, thresh_med_max);
+fprintf('  MEDIUM cluster: scores %.2f - %.2f (40-60%%ile)\n', thresh_med_min, thresh_med_max);
 fprintf('  GAP:            scores %.2f - %.2f\n', thresh_med_max, thresh_hard_min);
 fprintf('  HARD cluster:   scores >= %.2f (top 15%%)\n\n', thresh_hard_min);
 
@@ -345,12 +347,12 @@ score_range = score_max - score_min;
 
 % Define TIGHT clusters with gaps between them
 % Easy: Bottom 15% (tight cluster of easiest games)
-% Medium: 45-55% (tight cluster around median)
+% Medium: 40-60% (tight cluster around median, wider to ensure 4+ games)
 % Hard: Top 15% (tight cluster of hardest games)
 
 thresh_easy_max = prctile(comp_scores, 15);      % Top of easy cluster
-thresh_med_min = prctile(comp_scores, 45);       % Bottom of medium cluster
-thresh_med_max = prctile(comp_scores, 55);       % Top of medium cluster
+thresh_med_min = prctile(comp_scores, 40);       % Bottom of medium cluster
+thresh_med_max = prctile(comp_scores, 60);       % Top of medium cluster
 thresh_hard_min = prctile(comp_scores, 85);      % Bottom of hard cluster
 
 % Categorize games into TIGHT clusters
@@ -361,7 +363,7 @@ hard_cluster = sorted_games(comp_scores(sort_idx) >= thresh_hard_min);
 fprintf('Cluster Strategy (Tight grouping with maximum separation):\n');
 fprintf('  EASY cluster (bottom 15%%): %d games, scores %.2f - %.2f\n', ...
     length(easy_cluster), min([easy_cluster.CompositeScore]), max([easy_cluster.CompositeScore]));
-fprintf('  MEDIUM cluster (45-55%%ile): %d games, scores %.2f - %.2f\n', ...
+fprintf('  MEDIUM cluster (40-60%%ile): %d games, scores %.2f - %.2f\n', ...
     length(medium_cluster), min([medium_cluster.CompositeScore]), max([medium_cluster.CompositeScore]));
 fprintf('  HARD cluster (top 15%%): %d games, scores %.2f - %.2f\n\n', ...
     length(hard_cluster), min([hard_cluster.CompositeScore]), max([hard_cluster.CompositeScore]));
