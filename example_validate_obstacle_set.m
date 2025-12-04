@@ -7,15 +7,16 @@ clear;
 % ============================================================================
 % EXAMPLE 1: Validate a specific set
 % ============================================================================
-set_number = 1;      % The set number to validate
+set_number = 44;      % The set number to validate
 pairs_number = 3;    % Number of pairs in the set
 
 % Optional: specify base folder (if different from default)
-% base_folder = 'C:\Users\mahbo\OneDrive - University of Calgary\code\game_creation_and_fits\new_game_set';
-% [all_passed, results] = validate_obstacle_set(set_number, pairs_number, base_folder);
+base_folder = 'C:\Users\mahbo\OneDrive - University of Calgary\code\game_creation_and_fits\new_games\selected_games_2';
+base_folder = '/home/mahboobe/Desktop/game_generation_and_path_planning/new_games/selected_games_2';
+[all_passed, results] = validate_obstacle_set(set_number, pairs_number, base_folder);
 
 % Use default base folder
-[all_passed, results] = validate_obstacle_set(set_number, pairs_number);
+% [all_passed, results] = validate_obstacle_set(set_number, pairs_number);
 
 % ============================================================================
 % EXAMPLE 2: Validate multiple sets

@@ -28,17 +28,17 @@ max_distance = sqrt(x_range^2 + y_range^2);
 
 % Obstacle radius constraints
 min_radius = 2;  % Minimum obstacle radius (cm)
-max_radius = 4;  % Maximum obstacle radius (cm)
+max_radius = 3.25;  % Maximum obstacle radius (cm)
 
 % Distance constraints (same as create_obstacle_sets.m)
-min_distance_between_obstacles = 1.5;  % Minimum gap between obstacles from different pairs (cm)
+min_distance_between_obstacles = 2;  % Minimum gap between obstacles from different pairs (cm)
 min_distance_between_obstacle_pairs = 2.0;  % Minimum gap between obstacles in same pair (cm)
 min_distance_to_end_and_start = 2.5;  % Minimum distance from start/end points (cm)
 min_distance_middle_points = 2.5;  % Minimum distance between middle points of pairs (cm)
 
 % Maximum values (scale with pairs)
 max_distance_to_end_and_start = 0.15*max_distance + 0.2*(max_distance/pairs_number);
-max_distance_between_obstacle_pairs = 0.05*max_distance + 0.03*(max_distance/pairs_number);
+max_distance_between_obstacle_pairs = 3;
 
 % ============================================================================
 % LOAD OBSTACLE SET
@@ -272,13 +272,13 @@ results.check6_bounds.violations = out_of_bounds;
 results.check7_start_end_bounds = struct();
 results.check7_start_end_bounds.passed = true;
 results.check7_start_end_bounds.violations = [];
-
-if X_s(1) < 0 || X_s(1) > x_range || X_s(2) < 0 || X_s(2) > y_range
+room = 3;
+if X_s(1) < 0 -room || X_s(1) > x_range + room || X_s(2) < 0 || X_s(2) > y_range
     results.check7_start_end_bounds.passed = false;
     results.check7_start_end_bounds.violations = [results.check7_start_end_bounds.violations; 1, X_s];
 end
 
-if X_e(1) < 0 || X_e(1) > x_range || X_e(2) < 0 || X_e(2) > y_range
+if X_e(1) < 0- room || X_e(1) > x_range + room || X_e(2) < 0 || X_e(2) > y_range
     results.check7_start_end_bounds.passed = false;
     results.check7_start_end_bounds.violations = [results.check7_start_end_bounds.violations; 2, X_e];
 end
