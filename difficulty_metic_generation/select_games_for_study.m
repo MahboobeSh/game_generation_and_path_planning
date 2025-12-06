@@ -14,14 +14,15 @@
 
 % --- CONFIGURATION ---
 base_folder = 'C:\Users\Mahbo\OneDrive - University of Calgary\code\game_creation_and_fits\new_games\selected_games_2';
-base_folder = '/home/mahboobe/Desktop/game_generation_and_path_planning/new_games/selected_games_2';
+base_folder = '/home/mahboobe/Desktop/game_generation_and_path_planning/new_games/selected_games_3';
+base_folder = '/home/mahboobe/Desktop/game_generation_and_path_planning/new_games/final_games';
 % base_folder = '/home/mahboobe/Desktop/game_generation_and_path_planning/new_games/new_games';
 folders_to_scan = {'3pairs/fit', '4pairs/fit', '5pairs/fit'};
 % folders_to_scan = {'5pairs/fit',};
 
 % RELAXED Length Constraints
 target_len_GLOBAL = 80; 
-tolerance_cm = 0.15 + 0.1; 
+tolerance_cm = 0.01 + 0.1; 
 
 min_len = target_len_GLOBAL - tolerance_cm; % ~70 cm
 max_len = target_len_GLOBAL + tolerance_cm; % ~90 cm
@@ -48,8 +49,10 @@ for f = 1:length(folders_to_scan)
                 np = 3;
             end
             
-            % Get Path (prefer curve over A* path)
-            if isfield(data, 'curve') && ~isempty(data.curve)
+            % Get Path (prefer equalized curve > curve > A* path)
+            if isfield(data, 'curve_equalized') && ~isempty(data.curve_equalized)
+                path = data.curve_equalized;
+            elseif isfield(data, 'curve') && ~isempty(data.curve)
                 path = data.curve;
             elseif isfield(data, 'path') && ~isempty(data.path)
                 path = data.path;
@@ -106,6 +109,77 @@ sorted_games = all_games(sort_idx);
 % Define Thresholds (33% and 66% percentile)
 score_33 = prctile(comp_scores, 33);
 score_66 = prctile(comp_scores, 66);
+
+% Check total games available
+total_games = length(all_games);
+min_games_required = 12;
+games_per_category = 4;
+
+fprintf('Total valid games: %d\n', total_games);
+
+% Adjust clustering strategy based on number of games
+if total_games >= min_games_required && total_games <= 15
+    % With 12-15 games, directly split into thirds to ensure 4 per category
+    fprintf('Using direct split for %d games to ensure 4 per category\n\n', total_games);
+    
+    % Easy: indices 1-4 (first 4 sorted games)
+    easy_cluster = sorted_games(1:4);
+    % Hard: indices end-3:end (last 4 sorted games)
+    hard_cluster = sorted_games(end-3:end);
+    % Medium: everything in between
+    medium_cluster = sorted_games(5:end-4);
+    
+    fprintf('Cluster Strategy (Direct split):\n');
+    fprintf('  EASY cluster: %d games (indices 1-4), scores %.2f - %.2f\n', ...
+        length(easy_cluster), min([easy_cluster.CompositeScore]), max([easy_cluster.CompositeScore]));
+    fprintf('  MEDIUM cluster: %d games (indices 5-%d), scores %.2f - %.2f\n', ...
+        length(medium_cluster), total_games-4, min([medium_cluster.CompositeScore]), max([medium_cluster.CompositeScore]));
+    fprintf('  HARD cluster: %d games (indices %d-%d), scores %.2f - %.2f\n\n', ...
+        length(hard_cluster), total_games-3, total_games, min([hard_cluster.CompositeScore]), max([hard_cluster.CompositeScore]));
+    
+elseif total_games > 15
+    % With more games, use tight percentile clusters with gaps
+    fprintf('Sufficient games available - using tight clusters with gaps\n\n');
+    thresh_easy_max = prctile(comp_scores, 15);      % Bottom 15%
+    thresh_med_min = prctile(comp_scores, 40);       % Medium start
+    thresh_med_max = prctile(comp_scores, 60);       % Medium end
+    thresh_hard_min = prctile(comp_scores, 85);      % Top 15%
+    
+    % Categorize games into clusters
+    easy_cluster = sorted_games(comp_scores(sort_idx) <= thresh_easy_max);
+    medium_cluster = sorted_games(comp_scores(sort_idx) >= thresh_med_min & comp_scores(sort_idx) <= thresh_med_max);
+    hard_cluster = sorted_games(comp_scores(sort_idx) >= thresh_hard_min);
+    
+    fprintf('Cluster Strategy (Percentile-based):\n');
+    fprintf('  EASY cluster (bottom 15%%): %d games, scores %.2f - %.2f\n', ...
+        length(easy_cluster), min([easy_cluster.CompositeScore]), max([easy_cluster.CompositeScore]));
+    fprintf('  MEDIUM cluster (40-60%%ile): %d games, scores %.2f - %.2f\n', ...
+        length(medium_cluster), min([medium_cluster.CompositeScore]), max([medium_cluster.CompositeScore]));
+    fprintf('  HARD cluster (top 15%%): %d games, scores %.2f - %.2f\n\n', ...
+        length(hard_cluster), min([hard_cluster.CompositeScore]), max([hard_cluster.CompositeScore]));
+else
+    % Fewer than 12 games - use thirds split
+    fprintf('WARNING: Only %d games available (need at least %d for %d per category)\n', ...
+        total_games, min_games_required, games_per_category);
+    fprintf('Will select as many as possible from each cluster.\n\n');
+    
+    thresh_easy_max = prctile(comp_scores, 33);
+    thresh_med_min = prctile(comp_scores, 34);
+    thresh_med_max = prctile(comp_scores, 67);
+    thresh_hard_min = prctile(comp_scores, 68);
+    
+    easy_cluster = sorted_games(comp_scores(sort_idx) <= thresh_easy_max);
+    medium_cluster = sorted_games(comp_scores(sort_idx) >= thresh_med_min & comp_scores(sort_idx) <= thresh_med_max);
+    hard_cluster = sorted_games(comp_scores(sort_idx) >= thresh_hard_min);
+    
+    fprintf('Cluster Strategy (Best effort):\n');
+    fprintf('  EASY cluster: %d games, scores %.2f - %.2f\n', ...
+        length(easy_cluster), min([easy_cluster.CompositeScore]), max([easy_cluster.CompositeScore]));
+    fprintf('  MEDIUM cluster: %d games, scores %.2f - %.2f\n', ...
+        length(medium_cluster), min([medium_cluster.CompositeScore]), max([medium_cluster.CompositeScore]));
+    fprintf('  HARD cluster: %d games, scores %.2f - %.2f\n\n', ...
+        length(hard_cluster), min([hard_cluster.CompositeScore]), max([hard_cluster.CompositeScore]));
+end
 
 % --- 3. VISUALIZATION ---
 figure('Position', [50, 50, 1600, 900], 'Name', 'Game Selection - Extended Steering Law');
@@ -345,28 +419,7 @@ score_min = min(comp_scores);
 score_max = max(comp_scores);
 score_range = score_max - score_min;
 
-% Define TIGHT clusters with gaps between them
-% Easy: Bottom 15% (tight cluster of easiest games)
-% Medium: 40-60% (tight cluster around median, wider to ensure 4+ games)
-% Hard: Top 15% (tight cluster of hardest games)
-
-thresh_easy_max = prctile(comp_scores, 15);      % Top of easy cluster
-thresh_med_min = prctile(comp_scores, 40);       % Bottom of medium cluster
-thresh_med_max = prctile(comp_scores, 60);       % Top of medium cluster
-thresh_hard_min = prctile(comp_scores, 85);      % Bottom of hard cluster
-
-% Categorize games into TIGHT clusters
-easy_cluster = sorted_games(comp_scores(sort_idx) <= thresh_easy_max);
-medium_cluster = sorted_games(comp_scores(sort_idx) >= thresh_med_min & comp_scores(sort_idx) <= thresh_med_max);
-hard_cluster = sorted_games(comp_scores(sort_idx) >= thresh_hard_min);
-
-fprintf('Cluster Strategy (Tight grouping with maximum separation):\n');
-fprintf('  EASY cluster (bottom 15%%): %d games, scores %.2f - %.2f\n', ...
-    length(easy_cluster), min([easy_cluster.CompositeScore]), max([easy_cluster.CompositeScore]));
-fprintf('  MEDIUM cluster (40-60%%ile): %d games, scores %.2f - %.2f\n', ...
-    length(medium_cluster), min([medium_cluster.CompositeScore]), max([medium_cluster.CompositeScore]));
-fprintf('  HARD cluster (top 15%%): %d games, scores %.2f - %.2f\n\n', ...
-    length(hard_cluster), min([hard_cluster.CompositeScore]), max([hard_cluster.CompositeScore]));
+% Clusters are already defined above based on game count
 
 if ~isempty(easy_cluster) && ~isempty(hard_cluster)
     gap_easy_med = min([medium_cluster.CompositeScore]) - max([easy_cluster.CompositeScore]);
@@ -375,13 +428,27 @@ if ~isempty(easy_cluster) && ~isempty(hard_cluster)
     fprintf('  GAP between Medium and Hard: %.2f\n\n', gap_med_hard);
 end
 
+% Check total games available
+total_games = length(all_games);
+min_games_required = 12;
+games_per_category = 4;
+
+fprintf('Total valid games: %d\n', total_games);
+if total_games < min_games_required
+    fprintf('WARNING: Only %d games available (need at least %d for %d per category)\n', ...
+        total_games, min_games_required, games_per_category);
+    fprintf('Will select as many as possible from each cluster.\n\n');
+else
+    fprintf('Sufficient games available - will select %d per category\n\n', games_per_category);
+end
+
 % Suggest games - select from tight clusters
 suggestions = struct('category', {}, 'game', {}, 'score', {}, 'pairs', {});
 
 % EASY: Select 4 games from the EASIEST cluster (close together)
-if length(easy_cluster) >= 4
-    % Take first 4 games (most similar, easiest)
-    for i = 1:4
+if total_games >= min_games_required && length(easy_cluster) >= games_per_category
+    % Take exactly 4 games (most similar, easiest)
+    for i = 1:games_per_category
         suggestions(end+1).category = 'EASY';
         suggestions(end).game = easy_cluster(i).name;
         suggestions(end).score = easy_cluster(i).CompositeScore;
@@ -390,7 +457,9 @@ if length(easy_cluster) >= 4
         suggestions(end).rotation = easy_cluster(i).K_TotalRotation;
     end
 elseif ~isempty(easy_cluster)
-    for i = 1:length(easy_cluster)
+    % Fallback: select as many as available (up to 4)
+    num_to_select = min(games_per_category, length(easy_cluster));
+    for i = 1:num_to_select
         suggestions(end+1).category = 'EASY';
         suggestions(end).game = easy_cluster(i).name;
         suggestions(end).score = easy_cluster(i).CompositeScore;
@@ -401,10 +470,11 @@ elseif ~isempty(easy_cluster)
 end
 
 % MEDIUM: Select 4 games from the MIDDLE cluster (close together)
-if length(medium_cluster) >= 4
-    % Take middle 4 games from the cluster (most representative of median)
+if total_games >= min_games_required && length(medium_cluster) >= games_per_category
+    % Take exactly 4 games from middle of the cluster
     start_idx = max(1, round(length(medium_cluster)/2) - 1);
-    for i = start_idx:min(start_idx+3, length(medium_cluster))
+    end_idx = min(start_idx + games_per_category - 1, length(medium_cluster));
+    for i = start_idx:end_idx
         suggestions(end+1).category = 'MEDIUM';
         suggestions(end).game = medium_cluster(i).name;
         suggestions(end).score = medium_cluster(i).CompositeScore;
@@ -413,7 +483,11 @@ if length(medium_cluster) >= 4
         suggestions(end).rotation = medium_cluster(i).K_TotalRotation;
     end
 elseif ~isempty(medium_cluster)
-    for i = 1:length(medium_cluster)
+    % Fallback: select as many as available (up to 4) from middle
+    num_to_select = min(games_per_category, length(medium_cluster));
+    start_idx = max(1, round(length(medium_cluster)/2) - floor(num_to_select/2));
+    end_idx = min(start_idx + num_to_select - 1, length(medium_cluster));
+    for i = start_idx:end_idx
         suggestions(end+1).category = 'MEDIUM';
         suggestions(end).game = medium_cluster(i).name;
         suggestions(end).score = medium_cluster(i).CompositeScore;
@@ -424,9 +498,9 @@ elseif ~isempty(medium_cluster)
 end
 
 % HARD: Select 4 games from the HARDEST cluster (close together)
-if length(hard_cluster) >= 4
-    % Take last 4 games (most similar, hardest)
-    start_idx = length(hard_cluster) - 3;
+if total_games >= min_games_required && length(hard_cluster) >= games_per_category
+    % Take exactly 4 games (most similar, hardest)
+    start_idx = length(hard_cluster) - games_per_category + 1;
     for i = start_idx:length(hard_cluster)
         suggestions(end+1).category = 'HARD';
         suggestions(end).game = hard_cluster(i).name;
@@ -436,7 +510,10 @@ if length(hard_cluster) >= 4
         suggestions(end).rotation = hard_cluster(i).K_TotalRotation;
     end
 elseif ~isempty(hard_cluster)
-    for i = 1:length(hard_cluster)
+    % Fallback: select as many as available (up to 4)
+    num_to_select = min(games_per_category, length(hard_cluster));
+    start_idx = length(hard_cluster) - num_to_select + 1;
+    for i = start_idx:length(hard_cluster)
         suggestions(end+1).category = 'HARD';
         suggestions(end).game = hard_cluster(i).name;
         suggestions(end).score = hard_cluster(i).CompositeScore;
@@ -595,7 +672,7 @@ if ~isempty(suggestions)
     % Create table data
     table_text = sprintf('SUGGESTED GAMES SUMMARY\n\n');
     table_text = [table_text sprintf('%-8s %-30s %8s\n', 'Category', 'Game', 'Score')];
-    table_text = [table_text repmat('-', 1, 60) '\n'];
+    table_text = [table_text sprintf('%s\n', repmat('-', 1, 60))];
     
     for i = 1:length(suggestions)
         % Truncate long names

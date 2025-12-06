@@ -11,7 +11,7 @@ clear; close all; clc;
 %% ========== CONFIGURATION (EDIT THIS) ==========
 
 % Base folder containing your games
-base_folder = '/home/mahboobe/Desktop/game_generation_and_path_planning/new_games/selected_games_2';
+base_folder = '/home/mahboobe/Desktop/game_generation_and_path_planning/new_games/final_games';
 
 % ────── SELECT MODE ──────
 % Mode 1: Single game
@@ -20,10 +20,10 @@ mode = 2;  % Change to 1 or 2
 
 % ────── MODE 1: Single Game ──────
 set_number = 44;        % Specific set number
-number_of_pairs = 3;    % 3, 4, or 5
+number_of_pairs = 5;    % 3, 4, or 5
 
 % ────── MODE 2: All Games in Folder ──────
-pairs_to_visualize = 3;  % 3, 4, or 5 - will show ALL games in this folder
+pairs_to_visualize = 4;  % 3, 4, or 5 - will show ALL games in this folder
 
 % ────── SAVE OPTIONS ──────
 save_figure = true;

@@ -13,7 +13,7 @@
 %   - Batch process and save figures
 
 %% CONFIGURATION
-base_folder = '/home/mahboobe/Desktop/game_generation_and_path_planning/new_games/selected_games_2';
+base_folder = '/home/mahboobe/Desktop/game_generation_and_path_planning/new_games/selected_games_3';
 
 %% METHOD 1: Visualize specific game(s) by set number and pairs
 % Example: Visualize set 44, 3 pairs
@@ -162,4 +162,5 @@ end
 % Visualize hard games
 % visualize_game_with_metrics(fullfile(base_folder, '4pairs/fit/set_2_4pairs.mat'));
 % visualize_game_with_metrics(fullfile(base_folder, '5pairs/fit/set_96_5pairs.mat'));
+
 

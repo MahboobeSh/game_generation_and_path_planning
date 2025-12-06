@@ -29,7 +29,7 @@ subtraction_values = subtraction_values(randperm(length(subtraction_values)))'; 
 % Create a structured format for easy access
 subtraction_data = struct();
 for i = 1:num_trials
-    subtraction_data(i).trial_number = i;
+    subtraction_data(i).game_number = i;
     subtraction_data(i).starting_number = starting_numbers(i);
     subtraction_data(i).subtract_by = subtraction_values(i);
     subtraction_data(i).task = sprintf('%d - %d', starting_numbers(i), subtraction_values(i));
@@ -37,11 +37,11 @@ end
 
 % Display the results
 fprintf('\n=== Serial Subtraction Tasks ===\n\n');
-fprintf('Trial | Starting | Subtract | Task\n');
+fprintf('Game | Starting | Subtract | Task\n');
 fprintf('------|----------|----------|-------------\n');
 for i = 1:num_trials
     fprintf('%5d | %8d | %8d | %s\n', ...
-        subtraction_data(i).trial_number, ...
+        subtraction_data(i).game_number, ...
         subtraction_data(i).starting_number, ...
         subtraction_data(i).subtract_by, ...
         subtraction_data(i).task);

@@ -304,3 +304,4 @@ function [curvature_factor, straight_distance] = calculate_path_curvature(path, 
     curvature_factor = (path_length - straight_distance) / straight_distance;
 end
 
+

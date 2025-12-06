@@ -48,7 +48,7 @@ function [rehab_metrics] = calculate_rehab_metrics_minimal(path_curve, obstacles
     %% 5. Composite Score (Extended Steering Law)
     % Formula: ID = Steering + alpha * log(1 + K)
     
-    alpha = 5.0; % Empirical weighting factor
+    alpha = 3.0; % Empirical weighting factor
     curvature_term =  log(1 + K_total_rotation);
     
     composite_score = steering_index + alpha *curvature_term;
