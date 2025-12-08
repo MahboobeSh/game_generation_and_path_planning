@@ -16,13 +16,14 @@
 base_folder = 'C:\Users\Mahbo\OneDrive - University of Calgary\code\game_creation_and_fits\new_games\selected_games_2';
 base_folder = '/home/mahboobe/Desktop/game_generation_and_path_planning/new_games/selected_games_3';
 base_folder = '/home/mahboobe/Desktop/game_generation_and_path_planning/new_games/final_games';
-% base_folder = '/home/mahboobe/Desktop/game_generation_and_path_planning/new_games/new_games';
-folders_to_scan = {'3pairs/fit', '4pairs/fit', '5pairs/fit'};
-% folders_to_scan = {'5pairs/fit',};
+base_folder = '/home/mahboobe/Desktop/study_information/game_sets_data/';
+% folders_to_scan = {'3pairs/fit', '4pairs/fit', '5pairs/fit'};
+folders_to_scan = {'solved_games',};
+
 
 % RELAXED Length Constraints
 target_len_GLOBAL = 80; 
-tolerance_cm = 0.01 + 0.1; 
+tolerance_cm = 0.1 + 0.1; 
 
 min_len = target_len_GLOBAL - tolerance_cm; % ~70 cm
 max_len = target_len_GLOBAL + tolerance_cm; % ~90 cm

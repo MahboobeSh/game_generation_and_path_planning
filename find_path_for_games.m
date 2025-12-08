@@ -42,7 +42,16 @@ for k = [541]
 
     disp('Data loaded successfully.');
 
-    X_m = find_middle_point_in_obstacles(obstacles);
+    % Calculate original middle points from obstacles
+    X_m_original = find_middle_point_in_obstacles(obstacles);
+    
+    % Floor middle points to grid (this modifies the middle points)
+    X_m = floor(X_m_original / step_size) * step_size;
+    
+    % Adjust obstacles to align with the new (floored) middle points
+    % This ensures the middle points are truly in the middle of obstacle pairs
+    obstacles = adjust_obstacles_to_middle_points(obstacles, X_m_original, X_m);
+    
     Start_points = floor([X_s; X_m] / step_size) * step_size;
     End_points = floor([X_m; X_e] / step_size) * step_size;
     dynamic_path = [];

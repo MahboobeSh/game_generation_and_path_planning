@@ -16,22 +16,28 @@ color9 = [8, 61, 119] / 255;    % Navy blue color (#083D77)
 %[2,25,50,70,88,110,112,154,182,191,200,203,205,206,216][110,154,216,1121] 4pairs
 % [191,206] [44,99,53,18] 3pairs
 % [16,18,53,93,99]
-for k = [112]
+for k = [1:12]
     found_whole_path = true;
     step_size = 0.25;
     m =4;
 
     % Load the data from the .mat file
     set_number = k;
-    pairs_number =4;
+    pairs_number =0;
     % base_folder = 'C:\Users\mahbo\OneDrive - University of Calgary\code\game_creation_and_fits';
     base_folder = '/home/mahboobe/Desktop/game_generation_and_path_planning/game/';
     base_folder = '/home/mahboobe/Desktop/game_generation_and_path_planning/selected_games/';
     base_folder = '/home/mahboobe/Desktop/game_generation_and_path_planning/new_games/final_games';
+    base_folder = '/home/mahboobe/Desktop/study_information/game_sets_data/raw_games';
     %base_folder = '/home/mahboobe/Desktop/game_generation_and_path_planning/new_games/new_games/';
     % base_folder='C:\Users\mahbo\OneDrive - University of Calgary\code\game_creation_and_fits\new_games\selected_games\';
     pairs_folder = fullfile(base_folder, sprintf('%dpairs', pairs_number));
     set_name = sprintf('set_%d_%dpairs.mat', set_number, pairs_number);
+    if pairs_number ==0
+        pairs_folder = base_folder;
+        set_name = sprintf('set_%d.mat', set_number);
+    end
+    
     fullFileName = fullfile(pairs_folder, set_name);
     data = load(fullFileName);
 
@@ -47,7 +53,16 @@ for k = [112]
 
     disp('Data loaded successfully.');
 
-    X_m = find_middle_point_in_obstacles(obstacles);
+    % Calculate original middle points from obstacles
+    X_m_original = find_middle_point_in_obstacles(obstacles);
+    
+    % Floor middle points to grid (this modifies the middle points)
+    X_m = floor(X_m_original / step_size) * step_size;
+    
+    % Adjust obstacles to align with the new (floored) middle points
+    % This ensures the middle points are truly in the middle of obstacle pairs
+    obstacles = adjust_obstacles_to_middle_points(obstacles, X_m_original, X_m);
+    
     Start_points = floor([X_s; X_m] / step_size) * step_size;
     End_points = floor([X_m; X_e] / step_size) * step_size;
     dynamic_path = [];
@@ -345,11 +360,14 @@ end
     
     % Create new filename in the fit folder
     fit_set_name = sprintf('set_%d_%dpairs.mat', set_number, pairs_number);
+    if pairs_number == 0
+        fit_set_name = sprintf('set_%d_fit.mat', set_number);
+    end
     fit_fullFileName = fullfile(fit_folder, fit_set_name);
     
     % Save all original data from game set file plus new computed data
     % Original data from game set file
-    obstacle = data.obstacle;
+    obstacle = obstacles;
     obstacle_radious = data.obstacle_radious;
     x_range = data.x_range;
     y_range = data.y_range;
@@ -359,6 +377,12 @@ end
     else
         number_of_pairs = pairs_number; % Fallback to pairs_number if not in file
     end
+
+    if isfield(data, 'old_filename')
+        old_filename = data.old_filename;
+    else
+        old_filename = 'not_valid';
+    end
     
     % Save all data to new file (original + new)
     % Original game set variables: X_e, X_s, obstacle, obstacle_radious, x_range, y_range, number_of_pairs
@@ -367,7 +391,7 @@ end
     if found_whole_path
         save(fit_fullFileName, 'X_e', 'X_s', 'obstacle', 'obstacle_radious', 'x_range', 'y_range', 'number_of_pairs', ...
              'Start_points', 'End_points', 'path', 'step_size', 'm', 'avoid_radius', ...
-             'visited_nodes', 'curve', 'curve_segment_points', 'variables_matrix', 'num_samples_list','curve_equalized', 'curve_equalized_info');
+             'visited_nodes', 'curve', 'curve_segment_points', 'variables_matrix', 'num_samples_list','curve_equalized', 'curve_equalized_info','old_filename');
     end
     disp('Pathfinding completed.');
     % Convert to a string suitable for a filename (e.g., '2024-03-11_15-30-00')

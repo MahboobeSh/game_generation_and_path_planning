@@ -12,11 +12,12 @@ function list_games_by_path_length()
     
     % Base folder for games
     base_folder = '/home/mahboobe/Desktop/game_generation_and_path_planning/new_games/selected_games_2';
+    base_folder = '/home/mahboobe/Desktop/study_information/game_sets_data/';
     % base_folder = 'C:\Users\mahbo\OneDrive - University of Calgary\code\game_creation_and_fits\new_games\selected_games'
     
     % Folders to scan
     folders_to_scan = {'3pairs/fit', '4pairs/fit', '5pairs/fit'};
-    
+    folders_to_scan = {'solved_games'}
     % Storage for all game data
     all_games = struct('name', {}, 'pairs', {}, 'set_number', {}, 'path_length', {}, 'file_path', {});
     

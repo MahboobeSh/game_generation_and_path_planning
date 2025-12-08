@@ -265,15 +265,30 @@ if save_to_mat
     if user_number == 0
         fprintf('\nFile not saved (user number = 0).\n\n');
     else
-        mat_filename = sprintf('game_order_for_user_%d.mat', user_number);
+        % Create save directory
+        save_dir = fullfile(getenv('HOME'), 'Desktop', 'study_information', 'game_order_data');
+        if ~exist(save_dir, 'dir')
+            mkdir(save_dir);
+            fprintf('Created directory: %s\n', save_dir);
+        end
         
-        % Save to .mat file
-        save(mat_filename, 'game_order');
-        fprintf('\nGame order saved to MAT file: %s\n', mat_filename);
-        fprintf('\nTo load and use:\n');
-        fprintf('  load(''%s'')\n', mat_filename);
-        fprintf('  trial_1 = game_order(1)\n');
-        fprintf('  game_file = game_order(1).game_file\n\n');
+        % Create filename with full path
+        mat_filename = sprintf('game_order_for_user_%d.mat', user_number);
+        full_path = fullfile(save_dir, mat_filename);
+        
+        % Check if file already exists
+        if isfile(full_path)
+            fprintf('\nWARNING: Game order for user %d already exists at: %s\n', user_number, full_path);
+            fprintf('Skipping save to prevent overwriting existing data.\n\n');
+        else
+            % Save to .mat file
+            save(full_path, 'game_order');
+            fprintf('\nGame order saved to MAT file: %s\n', full_path);
+            fprintf('\nTo load and use:\n');
+            fprintf('  load(''%s'')\n', full_path);
+            fprintf('  trial_1 = game_order(1)\n');
+            fprintf('  game_file = game_order(1).game_file\n\n');
+        end
     end
 end
 
