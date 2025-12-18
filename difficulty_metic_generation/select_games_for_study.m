@@ -19,11 +19,12 @@ base_folder = '/home/mahboobe/Desktop/game_generation_and_path_planning/new_game
 base_folder = '/home/mahboobe/Desktop/study_information/game_sets_data/';
 % folders_to_scan = {'3pairs/fit', '4pairs/fit', '5pairs/fit'};
 folders_to_scan = {'solved_games',};
+folders_to_scan = {'raw_final_games/0pairs/fit',};
 
 
 % RELAXED Length Constraints
 target_len_GLOBAL = 80; 
-tolerance_cm = 0.1 + 0.1; 
+tolerance_cm = 0 + 0.1; 
 
 min_len = target_len_GLOBAL - tolerance_cm; % ~70 cm
 max_len = target_len_GLOBAL + tolerance_cm; % ~90 cm

@@ -9,7 +9,7 @@ clear
 % files = dir(fullfile(base_folder, filePattern));
 
 %for g = 1:numel(files)
-for k=
+for k=4
 % for g = 1:2
 % for g = 1
 
@@ -33,11 +33,11 @@ for k=
     
     % Load the A* path data
     path_data = load(fit_results_file);
-    percent = 2;
-    threshold= 0.7087;
+    percent = 0.5;
+    threshold= 4;
     safe_bound = calculate_safe_bound(path_data.curve_equalized,path_data.obstacle,path_data.obstacle_radious,percent, threshold);
     title_text = sprintf('percent = %f , Threshold = %f', percent, threshold);
-    % show_figure_with_safe_bound(path_data.curve_equalized,path_data.obstacle,path_data.obstacle_radious,safe_bound, title_text)
+    %show_figure_with_safe_bound(path_data.curve_equalized,path_data.obstacle,path_data.obstacle_radious,safe_bound, title_text)
     save(fit_results_file, 'safe_bound', 'percent', 'threshold', '-append');
     disp(min(safe_bound))
 end

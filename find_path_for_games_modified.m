@@ -16,7 +16,7 @@ color9 = [8, 61, 119] / 255;    % Navy blue color (#083D77)
 %[2,25,50,70,88,110,112,154,182,191,200,203,205,206,216][110,154,216,1121] 4pairs
 % [191,206] [44,99,53,18] 3pairs
 % [16,18,53,93,99]
-for k = [1:12]
+for k = [0]
     found_whole_path = true;
     step_size = 0.25;
     m =4;
@@ -28,7 +28,7 @@ for k = [1:12]
     base_folder = '/home/mahboobe/Desktop/game_generation_and_path_planning/game/';
     base_folder = '/home/mahboobe/Desktop/game_generation_and_path_planning/selected_games/';
     base_folder = '/home/mahboobe/Desktop/game_generation_and_path_planning/new_games/final_games';
-    base_folder = '/home/mahboobe/Desktop/study_information/game_sets_data/raw_games';
+    base_folder = '/home/mahboobe/Desktop/study_information/game_sets_data/raw_final_games';
     %base_folder = '/home/mahboobe/Desktop/game_generation_and_path_planning/new_games/new_games/';
     % base_folder='C:\Users\mahbo\OneDrive - University of Calgary\code\game_creation_and_fits\new_games\selected_games\';
     pairs_folder = fullfile(base_folder, sprintf('%dpairs', pairs_number));

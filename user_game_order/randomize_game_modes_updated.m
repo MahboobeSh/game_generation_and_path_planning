@@ -281,13 +281,13 @@ if save_to_mat
             fprintf('\nWARNING: Game order for user %d already exists at: %s\n', user_number, full_path);
             fprintf('Skipping save to prevent overwriting existing data.\n\n');
         else
-            % Save to .mat file
+        % Save to .mat file
             save(full_path, 'game_order');
             fprintf('\nGame order saved to MAT file: %s\n', full_path);
-            fprintf('\nTo load and use:\n');
+        fprintf('\nTo load and use:\n');
             fprintf('  load(''%s'')\n', full_path);
-            fprintf('  trial_1 = game_order(1)\n');
-            fprintf('  game_file = game_order(1).game_file\n\n');
+        fprintf('  trial_1 = game_order(1)\n');
+        fprintf('  game_file = game_order(1).game_file\n\n');
         end
     end
 end
