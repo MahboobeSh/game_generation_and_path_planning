@@ -1,4 +1,4 @@
-function [cost, grad] = optimize_bezier_to_astar(variables, num_segments, start_points, end_points, astar_path, num_samples, n_d, n_phi, num_samples_list,start_index, end_index)
+function [cost, grad] = optimize_bezier_to_astar_modified(variables, num_segments, start_points, end_points, astar_path, num_samples, n_d, n_phi, num_samples_list,start_index, end_index)
     variables_matrix = reshape(variables, [], n_d + n_phi + 2);
     curve_segment_points = calculate_curve_segment_points(variables_matrix, start_points, end_points, num_segments, n_d, n_phi);
     
@@ -12,12 +12,14 @@ function [cost, grad] = optimize_bezier_to_astar(variables, num_segments, start_
     for i = 1:num_segments
         segment_control_points = curve_segment_points(:, :, i);
         segment_curve = bezier_curve(segment_control_points, num_samples_list(i));
-        % segment_curve = bezier_equidistant(segment_control_points, num_samples_list(i));
         composite_curve = [composite_curve; segment_curve];
         min_distance_vector_temp = [];
         for j = 1: size(segment_curve,1)
             d = norm(segment_curve(j,:) - astar_path(start_index(i)-1+j,:));
             min_distance_vector_temp = [min_distance_vector_temp;d];
+        end
+        if i > 1 &&  i < num_segments 
+            min_distance_vector_temp_2 = min_distance_vector_temp;
         end
         % distance_matrix = pdist2(segment_curve , astar_path(start_index(i):end_index(i),:));
         % min_distance_vector_temp_2 = 2*min(distance_matrix, [], 2);
