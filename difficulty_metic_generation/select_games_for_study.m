@@ -17,9 +17,10 @@ base_folder = 'C:\Users\Mahbo\OneDrive - University of Calgary\code\game_creatio
 base_folder = '/home/mahboobe/Desktop/game_generation_and_path_planning/new_games/selected_games_3';
 base_folder = '/home/mahboobe/Desktop/game_generation_and_path_planning/new_games/final_games';
 base_folder = '/home/mahboobe/Desktop/study_information/game_sets_data/';
+base_folder = 'C:\Users\Mahboobe\OneDrive - University of Calgary\user_study_info\user_study_files_with_survey\user_study_files\'
 % folders_to_scan = {'3pairs/fit', '4pairs/fit', '5pairs/fit'};
 folders_to_scan = {'solved_games',};
-folders_to_scan = {'raw_final_games/0pairs/fit',};
+folders_to_scan = {'final_games_solved',};
 
 
 % RELAXED Length Constraints
@@ -628,7 +629,7 @@ if ~isempty(suggestions)
     
     bar(1:length(sorted_scores), sorted_scores, 'FaceColor', [0.7 0.7 0.7], 'EdgeColor', 'none');
     
-    % Mark suggested games
+    % Mark suggested games and add labels
     for i = 1:length(suggestions)
         game_idx = find(strcmp({sorted_games.name}, suggestions(i).game), 1);
         if ~isempty(game_idx)
@@ -641,12 +642,28 @@ if ~isempty(suggestions)
             end
             plot(game_idx, sorted_scores(game_idx), 'o', 'MarkerSize', 10, ...
                 'MarkerFaceColor', marker_color, 'MarkerEdgeColor', 'k', 'LineWidth', 2);
+            
+            % Extract short name (e.g., "set_7" from "set_7_fit.mat")
+            game_name = suggestions(i).game;
+            tokens = regexp(game_name, '(set_\d+)', 'tokens');
+            if ~isempty(tokens)
+                short_name = tokens{1}{1};
+            else
+                short_name = game_name;
+            end
+            
+            % Add game name as text label inside the bar
+            text(game_idx, sorted_scores(game_idx) / 2, short_name, ...
+                'Rotation', 90, 'FontSize', 9, 'Interpreter', 'none', ...
+                'HorizontalAlignment', 'center', 'VerticalAlignment', 'middle', ...
+                'FontWeight', 'bold', 'Color', 'black');
         end
     end
     
     xlabel('Game Rank', 'FontSize', 11);
     ylabel('Composite Score', 'FontSize', 11);
     title('Selected Games in Rank Order', 'FontSize', 12, 'FontWeight', 'bold');
+    ylim([0 max(sorted_scores) + 4]);
     grid on;
     
     % SUBPLOT 3: Comparison of metrics across categories
@@ -663,7 +680,7 @@ if ~isempty(suggestions)
     bar(metric_means);
     set(gca, 'XTickLabel', categories);
     ylabel('Average Metric Value', 'FontSize', 11);
-    legend({'Steering Index', 'K (Total Rotation)'}, 'Location', 'best');
+    legend({'Steering Index', 'K (Total Rotation)'}, 'Location', 'northwest');
     title('Average Metrics by Category', 'FontSize', 12, 'FontWeight', 'bold');
     grid on;
     
@@ -671,23 +688,142 @@ if ~isempty(suggestions)
     subplot(2, 2, 4);
     axis off;
     
-    % Create table data
+    % Create table data with all metrics
     table_text = sprintf('SUGGESTED GAMES SUMMARY\n\n');
-    table_text = [table_text sprintf('%-8s %-30s %8s\n', 'Category', 'Game', 'Score')];
-    table_text = [table_text sprintf('%s\n', repmat('-', 1, 60))];
+    table_text = [table_text sprintf('%-8s %-20s %8s %10s %10s %6s\n', ...
+        'Category', 'Game', 'Score', 'Steering', 'K (rad)', 'Pairs')];
+    table_text = [table_text sprintf('%s\n', repmat('-', 1, 75))];
     
     for i = 1:length(suggestions)
-        % Truncate long names
+        % Extract short name
         game_name = suggestions(i).game;
-        if length(game_name) > 30
-            game_name = [game_name(1:27) '...'];
+        tokens = regexp(game_name, '(set_\d+)', 'tokens');
+        if ~isempty(tokens)
+            short_name = tokens{1}{1};
+        else
+            short_name = game_name;
+            if length(short_name) > 20
+                short_name = [short_name(1:17) '...'];
+            end
         end
-        table_text = [table_text sprintf('%-8s %-30s %8.2f\n', ...
-            suggestions(i).category, game_name, suggestions(i).score)];
+        
+        table_text = [table_text sprintf('%-8s %-20s %8.2f %10.2f %10.4f %6d\n', ...
+            suggestions(i).category, short_name, suggestions(i).score, ...
+            suggestions(i).steering, suggestions(i).rotation, suggestions(i).pairs)];
     end
     
-    text(0.1, 0.9, table_text, 'FontSize', 9, 'FontName', 'FixedWidth', ...
+    text(0.05, 0.95, table_text, 'FontSize', 8, 'FontName', 'FixedWidth', ...
         'VerticalAlignment', 'top', 'Interpreter', 'none');
+    
+    % --- SAVE EACH SUBPLOT AS SEPARATE PNG FILES ---
+    fprintf('\nSaving subfigures as PNG files for thesis...\n');
+    
+    % Create output directory if it doesn't exist (logs folder in current directory)
+    output_dir = fullfile(pwd, 'logs');
+    if ~exist(output_dir, 'dir')
+        mkdir(output_dir);
+    end
+    
+    % Figure 1: Highlighted games on difficulty map
+    fig1 = figure('Position', [100, 100, 800, 600]);
+    hold on;
+    x_vals = [all_games.SteeringIndex];
+    y_vals = [all_games.K_TotalRotation];
+    scatter(x_vals, y_vals, 40, [0.8 0.8 0.8], 'filled', 'MarkerEdgeColor', 'none');
+    for i = 1:length(suggestions)
+        game_idx = find(strcmp({all_games.name}, suggestions(i).game), 1);
+        if ~isempty(game_idx)
+            if strcmp(suggestions(i).category, 'EASY')
+                marker_color = [0.2 0.8 0.2];
+            elseif strcmp(suggestions(i).category, 'MEDIUM')
+                marker_color = [0.9 0.9 0.2];
+            else
+                marker_color = [0.8 0.2 0.2];
+            end
+            scatter(all_games(game_idx).SteeringIndex, all_games(game_idx).K_TotalRotation, ...
+                100, marker_color, 'filled', 'MarkerEdgeColor', 'k', 'LineWidth', 2);
+        end
+    end
+    xlabel('Steering Index', 'FontSize', 11);
+    ylabel('K - Total Rotation (rad)', 'FontSize', 11);
+    title('Suggested Games (Highlighted)', 'FontSize', 12, 'FontWeight', 'bold');
+    legend({'All Games', 'Selected'}, 'Location', 'best');
+    grid on;
+    drawnow;
+    print(fig1, fullfile(output_dir, 'fig1_suggested_games_highlighted.png'), '-dpng', '-r300');
+    close(fig1);
+    fprintf('  Saved: fig1_suggested_games_highlighted.png\n');
+    
+    % Figure 2: Selected games in rank order
+    fig2 = figure('Position', [100, 100, 800, 600]);
+    hold on;
+    bar(1:length(sorted_scores), sorted_scores, 'FaceColor', [0.7 0.7 0.7], 'EdgeColor', 'none');
+    for i = 1:length(suggestions)
+        game_idx = find(strcmp({sorted_games.name}, suggestions(i).game), 1);
+        if ~isempty(game_idx)
+            if strcmp(suggestions(i).category, 'EASY')
+                marker_color = [0.2 0.8 0.2];
+            elseif strcmp(suggestions(i).category, 'MEDIUM')
+                marker_color = [0.9 0.9 0.2];
+            else
+                marker_color = [0.8 0.2 0.2];
+            end
+            plot(game_idx, sorted_scores(game_idx), 'o', 'MarkerSize', 10, ...
+                'MarkerFaceColor', marker_color, 'MarkerEdgeColor', 'k', 'LineWidth', 2);
+            game_name = suggestions(i).game;
+            tokens = regexp(game_name, '(set_\d+)', 'tokens');
+            if ~isempty(tokens)
+                short_name = tokens{1}{1};
+            else
+                short_name = game_name;
+            end
+            text(game_idx, sorted_scores(game_idx) / 2, short_name, ...
+                'Rotation', 90, 'FontSize', 9, 'Interpreter', 'none', ...
+                'HorizontalAlignment', 'center', 'VerticalAlignment', 'middle', ...
+                'FontWeight', 'bold', 'Color', 'black');
+        end
+    end
+    xlabel('Game Rank', 'FontSize', 11);
+    ylabel('Composite Score', 'FontSize', 11);
+    title('Selected Games in Rank Order', 'FontSize', 12, 'FontWeight', 'bold');
+    ylim([0 max(sorted_scores) + 4]);
+    grid on;
+    drawnow;
+    print(fig2, fullfile(output_dir, 'fig2_selected_games_rank_order.png'), '-dpng', '-r300');
+    close(fig2);
+    fprintf('  Saved: fig2_selected_games_rank_order.png\n');
+    
+    % Figure 3: Average metrics by category
+    fig3 = figure('Position', [100, 100, 800, 600]);
+    categories = unique({suggestions.category}, 'stable');
+    metric_means = zeros(length(categories), 2);
+    for c = 1:length(categories)
+        cat_games = suggestions(strcmp({suggestions.category}, categories{c}));
+        metric_means(c, 1) = mean([cat_games.steering]);
+        metric_means(c, 2) = mean([cat_games.rotation]);
+    end
+    bar(metric_means);
+    set(gca, 'XTickLabel', categories);
+    ylabel('Average Metric Value', 'FontSize', 11);
+    legend({'Steering Index', 'K (Total Rotation)'}, 'Location', 'northwest');
+    title('Average Metrics by Category', 'FontSize', 12, 'FontWeight', 'bold');
+    grid on;
+    drawnow;
+    print(fig3, fullfile(output_dir, 'fig3_average_metrics_by_category.png'), '-dpng', '-r300');
+    close(fig3);
+    fprintf('  Saved: fig3_average_metrics_by_category.png\n');
+    
+    % Figure 4: Summary table
+    fig4 = figure('Position', [100, 100, 800, 600]);
+    axis off;
+    text(0.05, 0.95, table_text, 'FontSize', 8, 'FontName', 'FixedWidth', ...
+        'VerticalAlignment', 'top', 'Interpreter', 'none');
+    drawnow;
+    print(fig4, fullfile(output_dir, 'fig4_suggested_games_summary_table.png'), '-dpng', '-r300');
+    close(fig4);
+    fprintf('  Saved: fig4_suggested_games_summary_table.png\n');
+    
+    fprintf('All figures saved to: %s\n\n', output_dir);
 end
 
 % Export to workspace for further analysis
