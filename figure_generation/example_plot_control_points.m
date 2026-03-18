@@ -4,19 +4,24 @@
 clear;
 clc;
 
-% Set the base folder (adjust to your path)
-base_folder = 'C:\Users\mahbo\OneDrive - University of Calgary\code\game_creation_and_fits';
-base_folder = "/home/mahboobe/Desktop/game_generation_and_path_planning/game"
+% Configuration
+save_figures = true;  % true = save to files, false = only display
 
-% Example: Plot control points for set 14 with 3 pairs of obstacles
+base_folder = 'C:\Users\Mahboobe\OneDrive - University of Calgary\code\game_creation_and_fits';
+
+script_dir = fileparts(mfilename('fullpath'));
+output_folder = fullfile(script_dir, '..', 'logs', 'curve');
+if ~exist(output_folder, 'dir')
+    mkdir(output_folder);
+end
+
 set_number = 14;
 pairs_number = 3;
 
 try
-    plot_bezier_control_points(set_number, pairs_number, base_folder);
+    plot_bezier_control_points(set_number, pairs_number, base_folder, save_figures, output_folder);
     fprintf('Successfully generated control point visualization!\n');
 catch ME
     fprintf('Error: %s\n', ME.message);
     fprintf('Make sure the .mat file exists in the fit folder.\n');
 end
-

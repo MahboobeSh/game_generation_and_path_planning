@@ -3,3 +3,6 @@
 *.csv
 *.asv
 *.zip
+*.eps
+
+logs/

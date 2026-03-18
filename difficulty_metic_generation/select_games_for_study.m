@@ -25,7 +25,7 @@ folders_to_scan = {'final_games_solved',};
 
 % RELAXED Length Constraints
 target_len_GLOBAL = 80; 
-tolerance_cm = 0 + 0.1; 
+tolerance_cm = 30 + 0.1; 
 
 min_len = target_len_GLOBAL - tolerance_cm; % ~70 cm
 max_len = target_len_GLOBAL + tolerance_cm; % ~90 cm
@@ -446,7 +446,7 @@ else
 end
 
 % Suggest games - select from tight clusters
-suggestions = struct('category', {}, 'game', {}, 'score', {}, 'pairs', {});
+suggestions = struct('category', {}, 'game', {}, 'score', {}, 'pairs', {}, 'path_length', {});
 
 % EASY: Select 4 games from the EASIEST cluster (close together)
 if total_games >= min_games_required && length(easy_cluster) >= games_per_category
@@ -458,6 +458,7 @@ if total_games >= min_games_required && length(easy_cluster) >= games_per_catego
         suggestions(end).pairs = easy_cluster(i).pairs;
         suggestions(end).steering = easy_cluster(i).SteeringIndex;
         suggestions(end).rotation = easy_cluster(i).K_TotalRotation;
+        suggestions(end).path_length = easy_cluster(i).PathLength;
     end
 elseif ~isempty(easy_cluster)
     % Fallback: select as many as available (up to 4)
@@ -469,6 +470,7 @@ elseif ~isempty(easy_cluster)
         suggestions(end).pairs = easy_cluster(i).pairs;
         suggestions(end).steering = easy_cluster(i).SteeringIndex;
         suggestions(end).rotation = easy_cluster(i).K_TotalRotation;
+        suggestions(end).path_length = easy_cluster(i).PathLength;
     end
 end
 
@@ -484,6 +486,7 @@ if total_games >= min_games_required && length(medium_cluster) >= games_per_cate
         suggestions(end).pairs = medium_cluster(i).pairs;
         suggestions(end).steering = medium_cluster(i).SteeringIndex;
         suggestions(end).rotation = medium_cluster(i).K_TotalRotation;
+        suggestions(end).path_length = medium_cluster(i).PathLength;
     end
 elseif ~isempty(medium_cluster)
     % Fallback: select as many as available (up to 4) from middle
@@ -497,6 +500,7 @@ elseif ~isempty(medium_cluster)
         suggestions(end).pairs = medium_cluster(i).pairs;
         suggestions(end).steering = medium_cluster(i).SteeringIndex;
         suggestions(end).rotation = medium_cluster(i).K_TotalRotation;
+        suggestions(end).path_length = medium_cluster(i).PathLength;
     end
 end
 
@@ -511,6 +515,7 @@ if total_games >= min_games_required && length(hard_cluster) >= games_per_catego
         suggestions(end).pairs = hard_cluster(i).pairs;
         suggestions(end).steering = hard_cluster(i).SteeringIndex;
         suggestions(end).rotation = hard_cluster(i).K_TotalRotation;
+        suggestions(end).path_length = hard_cluster(i).PathLength;
     end
 elseif ~isempty(hard_cluster)
     % Fallback: select as many as available (up to 4)
@@ -523,25 +528,31 @@ elseif ~isempty(hard_cluster)
         suggestions(end).pairs = hard_cluster(i).pairs;
         suggestions(end).steering = hard_cluster(i).SteeringIndex;
         suggestions(end).rotation = hard_cluster(i).K_TotalRotation;
+        suggestions(end).path_length = hard_cluster(i).PathLength;
     end
 end
 
 % Print suggestions
-fprintf('\n--- RECOMMENDED GAME SELECTION ---\n\n');
+fprintf('\n========================================\n');
+fprintf('--- RECOMMENDED GAME SELECTION ---\n');
+fprintf('========================================\n\n');
 if ~isempty(suggestions)
     % Group by category
     categories = unique({suggestions.category}, 'stable');
     for c = 1:length(categories)
         cat_games = suggestions(strcmp({suggestions.category}, categories{c}));
-        fprintf('%s GAMES (%d selected):\n', categories{c}, length(cat_games));
-        fprintf('%-40s %8s %10s %10s %6s\n', 'Game', 'Score', 'Steering', 'K (rad)', 'Pairs');
-        fprintf('--------------------------------------------------------------------------------\n');
+        fprintf('\n%s GAMES (%d selected):\n', categories{c}, length(cat_games));
+        fprintf('%-40s %8s %10s %10s %9s %6s\n', 'Game', 'Score', 'Steering', 'K (rad)', 'Path(cm)', 'Pairs');
+        fprintf('--------------------------------------------------------------------------------------------\n');
         for i = 1:length(cat_games)
-            fprintf('%-40s %8.2f %10.2f %10.4f %6d\n', ...
+            fprintf('%-40s %8.2f %10.2f %10.4f %9.2f %6d\n', ...
                 cat_games(i).game, cat_games(i).score, cat_games(i).steering, ...
-                cat_games(i).rotation, cat_games(i).pairs);
+                cat_games(i).rotation, cat_games(i).path_length, cat_games(i).pairs);
         end
         fprintf('\n');
+        if c < length(categories)
+            fprintf('============================================================================================\n');
+        end
     end
     
     % Calculate separation metrics for suggested games
@@ -555,7 +566,9 @@ if ~isempty(suggestions)
         hard_mean = mean([hard_sug.score]);
         hard_std = std([hard_sug.score]);
         
+        fprintf('\n========================================\n');
         fprintf('WITHIN-GROUP CONSISTENCY (Lower = Better):\n');
+        fprintf('========================================\n');
         fprintf('  Easy: mean = %.2f, std = %.2f, range = %.2f\n', ...
             easy_mean, easy_std, max([easy_sug.score]) - min([easy_sug.score]));
         
@@ -566,10 +579,12 @@ if ~isempty(suggestions)
                 med_mean, med_std, max([medium_sug.score]) - min([medium_sug.score]));
         end
         
-        fprintf('  Hard: mean = %.2f, std = %.2f, range = %.2f\n\n', ...
+        fprintf('  Hard: mean = %.2f, std = %.2f, range = %.2f\n', ...
             hard_mean, hard_std, max([hard_sug.score]) - min([hard_sug.score]));
         
+        fprintf('\n========================================\n');
         fprintf('BETWEEN-GROUP SEPARATION (Higher = Better):\n');
+        fprintf('========================================\n');
         if ~isempty(medium_sug)
             gap_easy_med = min([medium_sug.score]) - max([easy_sug.score]);
             gap_med_hard = min([hard_sug.score]) - max([medium_sug.score]);
@@ -579,7 +594,7 @@ if ~isempty(suggestions)
         else
             fprintf('  Gap Easy-Hard: %.2f\n', min([hard_sug.score]) - max([easy_sug.score]));
         end
-        fprintf('  Separation ratio (Hard/Easy): %.2fx\n\n', hard_mean/easy_mean);
+        fprintf('  Separation ratio (Hard/Easy): %.2fx\n', hard_mean/easy_mean);
     end
 else
     fprintf('Not enough games to make recommendations.\n\n');
@@ -601,6 +616,7 @@ if ~isempty(suggestions)
     scatter(x_vals, y_vals, 40, [0.8 0.8 0.8], 'filled', 'MarkerEdgeColor', 'none');
     
     % Highlight suggested games
+    label_positions = {'top', 'bottom', 'right', 'left', 'top', 'bottom', 'right', 'left', 'top', 'bottom', 'right', 'left'};
     for i = 1:length(suggestions)
         % Find the game in all_games
         game_idx = find(strcmp({all_games.name}, suggestions(i).game), 1);
@@ -614,13 +630,48 @@ if ~isempty(suggestions)
             end
             scatter(all_games(game_idx).SteeringIndex, all_games(game_idx).K_TotalRotation, ...
                 100, marker_color, 'filled', 'MarkerEdgeColor', 'k', 'LineWidth', 2);
+            
+            % Extract short name and add label with varying positions
+            game_name = suggestions(i).game;
+            tokens = regexp(game_name, '(set_\d+)', 'tokens');
+            if ~isempty(tokens)
+                short_name = tokens{1}{1};
+            else
+                short_name = game_name;
+            end
+            
+            % Vary label position to reduce overlap
+            pos = label_positions{mod(i-1, length(label_positions)) + 1};
+            x_pos = all_games(game_idx).SteeringIndex;
+            y_pos = all_games(game_idx).K_TotalRotation;
+            
+            switch pos
+                case 'top'
+                    text(x_pos, y_pos + 0.5, short_name, 'FontSize', 8, 'FontWeight', 'bold', ...
+                        'Interpreter', 'none', 'HorizontalAlignment', 'center', 'VerticalAlignment', 'bottom');
+                case 'bottom'
+                    text(x_pos, y_pos - 0.5, short_name, 'FontSize', 8, 'FontWeight', 'bold', ...
+                        'Interpreter', 'none', 'HorizontalAlignment', 'center', 'VerticalAlignment', 'top');
+                case 'right'
+                    text(x_pos + 0.3, y_pos, short_name, 'FontSize', 8, 'FontWeight', 'bold', ...
+                        'Interpreter', 'none', 'HorizontalAlignment', 'left', 'VerticalAlignment', 'middle');
+                case 'left'
+                    text(x_pos - 0.3, y_pos, short_name, 'FontSize', 8, 'FontWeight', 'bold', ...
+                        'Interpreter', 'none', 'HorizontalAlignment', 'right', 'VerticalAlignment', 'middle');
+            end
         end
     end
     
     xlabel('Steering Index', 'FontSize', 11);
     ylabel('K - Total Rotation (rad)', 'FontSize', 11);
     title('Suggested Games (Highlighted)', 'FontSize', 12, 'FontWeight', 'bold');
-    legend({'All Games', 'Selected'}, 'Location', 'best');
+    
+    % Create legend with color coding
+    h1 = scatter(NaN, NaN, 40, [0.8 0.8 0.8], 'filled', 'MarkerEdgeColor', 'none');
+    h2 = scatter(NaN, NaN, 100, [0.2 0.8 0.2], 'filled', 'MarkerEdgeColor', 'k', 'LineWidth', 2);
+    h3 = scatter(NaN, NaN, 100, [0.9 0.9 0.2], 'filled', 'MarkerEdgeColor', 'k', 'LineWidth', 2);
+    h4 = scatter(NaN, NaN, 100, [0.8 0.2 0.2], 'filled', 'MarkerEdgeColor', 'k', 'LineWidth', 2);
+    legend([h1 h2 h3 h4], {'All Games', 'Selected - Easy', 'Selected - Medium', 'Selected - Hard'}, 'Location', 'best');
     grid on;
     
     % SUBPLOT 2: Score distribution with suggested games marked
@@ -690,26 +741,79 @@ if ~isempty(suggestions)
     
     % Create table data with all metrics
     table_text = sprintf('SUGGESTED GAMES SUMMARY\n\n');
-    table_text = [table_text sprintf('%-8s %-20s %8s %10s %10s %6s\n', ...
-        'Category', 'Game', 'Score', 'Steering', 'K (rad)', 'Pairs')];
-    table_text = [table_text sprintf('%s\n', repmat('-', 1, 75))];
+    table_text = [table_text sprintf('%-8s %-15s %8s %10s %10s %9s %6s\n', ...
+        'Category', 'Game', 'Score', 'Steering', 'K (rad)', 'Path(cm)', 'Pairs')];
+    table_text = [table_text sprintf('%s\n', repmat('-', 1, 80))];
     
-    for i = 1:length(suggestions)
-        % Extract short name
-        game_name = suggestions(i).game;
-        tokens = regexp(game_name, '(set_\d+)', 'tokens');
-        if ~isempty(tokens)
-            short_name = tokens{1}{1};
-        else
-            short_name = game_name;
-            if length(short_name) > 20
-                short_name = [short_name(1:17) '...'];
+    % Group by category and add spacing between groups
+    categories = unique({suggestions.category}, 'stable');
+    for c = 1:length(categories)
+        cat_games = suggestions(strcmp({suggestions.category}, categories{c}));
+        for j = 1:length(cat_games)
+            % Extract short name
+            game_name = cat_games(j).game;
+            tokens = regexp(game_name, '(set_\d+)', 'tokens');
+            if ~isempty(tokens)
+                short_name = tokens{1}{1};
+            else
+                short_name = game_name;
+                if length(short_name) > 15
+                    short_name = [short_name(1:12) '...'];
+                end
             end
+            
+            table_text = [table_text sprintf('%-8s %-15s %8.2f %10.2f %10.4f %9.2f %6d\n', ...
+                cat_games(j).category, short_name, cat_games(j).score, ...
+                cat_games(j).steering, cat_games(j).rotation, cat_games(j).path_length, cat_games(j).pairs)];
+        end
+        % Add blank line between categories (but not after the last one)
+        if c < length(categories)
+            table_text = [table_text sprintf('\n')];
+        end
+    end
+    
+    % Add separation statistics at the bottom
+    easy_sug = suggestions(strcmp({suggestions.category}, 'EASY'));
+    medium_sug = suggestions(strcmp({suggestions.category}, 'MEDIUM'));
+    hard_sug = suggestions(strcmp({suggestions.category}, 'HARD'));
+    
+    if ~isempty(easy_sug) && ~isempty(hard_sug)
+        table_text = [table_text sprintf('\n\n%s\n', repmat('=', 1, 80))];
+        table_text = [table_text sprintf('WITHIN-GROUP CONSISTENCY (Lower = Better):\n')];
+        table_text = [table_text sprintf('%s\n', repmat('-', 1, 80))];
+        
+        easy_mean = mean([easy_sug.score]);
+        easy_std = std([easy_sug.score]);
+        table_text = [table_text sprintf('  Easy:   mean=%.2f, std=%.2f, range=%.2f\n', ...
+            easy_mean, easy_std, max([easy_sug.score]) - min([easy_sug.score]))];
+        
+        if ~isempty(medium_sug)
+            med_mean = mean([medium_sug.score]);
+            med_std = std([medium_sug.score]);
+            table_text = [table_text sprintf('  Medium: mean=%.2f, std=%.2f, range=%.2f\n', ...
+                med_mean, med_std, max([medium_sug.score]) - min([medium_sug.score]))];
         end
         
-        table_text = [table_text sprintf('%-8s %-20s %8.2f %10.2f %10.4f %6d\n', ...
-            suggestions(i).category, short_name, suggestions(i).score, ...
-            suggestions(i).steering, suggestions(i).rotation, suggestions(i).pairs)];
+        hard_mean = mean([hard_sug.score]);
+        hard_std = std([hard_sug.score]);
+        table_text = [table_text sprintf('  Hard:   mean=%.2f, std=%.2f, range=%.2f\n', ...
+            hard_mean, hard_std, max([hard_sug.score]) - min([hard_sug.score]))];
+        
+        table_text = [table_text sprintf('\n%s\n', repmat('=', 1, 80))];
+        table_text = [table_text sprintf('BETWEEN-GROUP SEPARATION (Higher = Better):\n')];
+        table_text = [table_text sprintf('%s\n', repmat('-', 1, 80))];
+        
+        if ~isempty(medium_sug)
+            gap_easy_med = min([medium_sug.score]) - max([easy_sug.score]);
+            gap_med_hard = min([hard_sug.score]) - max([medium_sug.score]);
+            table_text = [table_text sprintf('  Gap Easy-Medium: %.2f\n', gap_easy_med)];
+            table_text = [table_text sprintf('  Gap Medium-Hard: %.2f\n', gap_med_hard)];
+            table_text = [table_text sprintf('  Total separation: %.2f\n', hard_mean - easy_mean)];
+        else
+            gap = min([hard_sug.score]) - max([easy_sug.score]);
+            table_text = [table_text sprintf('  Gap Easy-Hard: %.2f\n', gap)];
+        end
+        table_text = [table_text sprintf('  Separation ratio (Hard/Easy): %.2fx\n', hard_mean/easy_mean)];
     end
     
     text(0.05, 0.95, table_text, 'FontSize', 8, 'FontName', 'FixedWidth', ...
@@ -730,6 +834,7 @@ if ~isempty(suggestions)
     x_vals = [all_games.SteeringIndex];
     y_vals = [all_games.K_TotalRotation];
     scatter(x_vals, y_vals, 40, [0.8 0.8 0.8], 'filled', 'MarkerEdgeColor', 'none');
+    label_positions = {'top', 'bottom', 'right', 'left', 'top', 'bottom', 'right', 'left', 'top', 'bottom', 'right', 'left'};
     for i = 1:length(suggestions)
         game_idx = find(strcmp({all_games.name}, suggestions(i).game), 1);
         if ~isempty(game_idx)
@@ -742,12 +847,47 @@ if ~isempty(suggestions)
             end
             scatter(all_games(game_idx).SteeringIndex, all_games(game_idx).K_TotalRotation, ...
                 100, marker_color, 'filled', 'MarkerEdgeColor', 'k', 'LineWidth', 2);
+            
+            % Extract short name and add label with varying positions
+            game_name = suggestions(i).game;
+            tokens = regexp(game_name, '(set_\d+)', 'tokens');
+            if ~isempty(tokens)
+                short_name = tokens{1}{1};
+            else
+                short_name = game_name;
+            end
+            
+            % Vary label position to reduce overlap
+            pos = label_positions{mod(i-1, length(label_positions)) + 1};
+            x_pos = all_games(game_idx).SteeringIndex;
+            y_pos = all_games(game_idx).K_TotalRotation;
+            
+            switch pos
+                case 'top'
+                    text(x_pos, y_pos + 0.5, short_name, 'FontSize', 8, 'FontWeight', 'bold', ...
+                        'Interpreter', 'none', 'HorizontalAlignment', 'center', 'VerticalAlignment', 'bottom');
+                case 'bottom'
+                    text(x_pos, y_pos - 0.5, short_name, 'FontSize', 8, 'FontWeight', 'bold', ...
+                        'Interpreter', 'none', 'HorizontalAlignment', 'center', 'VerticalAlignment', 'top');
+                case 'right'
+                    text(x_pos + 0.3, y_pos, short_name, 'FontSize', 8, 'FontWeight', 'bold', ...
+                        'Interpreter', 'none', 'HorizontalAlignment', 'left', 'VerticalAlignment', 'middle');
+                case 'left'
+                    text(x_pos - 0.3, y_pos, short_name, 'FontSize', 8, 'FontWeight', 'bold', ...
+                        'Interpreter', 'none', 'HorizontalAlignment', 'right', 'VerticalAlignment', 'middle');
+            end
         end
     end
     xlabel('Steering Index', 'FontSize', 11);
     ylabel('K - Total Rotation (rad)', 'FontSize', 11);
     title('Suggested Games (Highlighted)', 'FontSize', 12, 'FontWeight', 'bold');
-    legend({'All Games', 'Selected'}, 'Location', 'best');
+    
+    % Create legend with color coding
+    h1 = scatter(NaN, NaN, 40, [0.8 0.8 0.8], 'filled', 'MarkerEdgeColor', 'none');
+    h2 = scatter(NaN, NaN, 100, [0.2 0.8 0.2], 'filled', 'MarkerEdgeColor', 'k', 'LineWidth', 2);
+    h3 = scatter(NaN, NaN, 100, [0.9 0.9 0.2], 'filled', 'MarkerEdgeColor', 'k', 'LineWidth', 2);
+    h4 = scatter(NaN, NaN, 100, [0.8 0.2 0.2], 'filled', 'MarkerEdgeColor', 'k', 'LineWidth', 2);
+    legend([h1 h2 h3 h4], {'All Games', 'Selected - Easy', 'Selected - Medium', 'Selected - Hard'}, 'Location', 'best');
     grid on;
     drawnow;
     print(fig1, fullfile(output_dir, 'fig1_suggested_games_highlighted.png'), '-dpng', '-r300');

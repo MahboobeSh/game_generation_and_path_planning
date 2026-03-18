@@ -1,4 +1,4 @@
-function plot_bezier_control_points(set_number, pairs_number, base_folder)
+function plot_bezier_control_points(set_number, pairs_number, base_folder, save_figures, output_folder)
 %PLOT_BEZIER_CONTROL_POINTS Creates a visualization of Bezier curve control points
 %   This function generates a figure similar to the hand-drawn sketch showing:
 %   - The Bezier curve path
@@ -10,9 +10,21 @@ function plot_bezier_control_points(set_number, pairs_number, base_folder)
 %   - set_number: The game set number to load
 %   - pairs_number: Number of obstacle pairs (2, 3, or 4)
 %   - base_folder: Base folder path (optional, defaults to current directory)
+%   - save_figures: true to save, false to only display (optional, default true)
+%   - output_folder: folder to save figures to (optional, defaults to logs)
 
 if nargin < 3
     base_folder = pwd;
+end
+if nargin < 4
+    save_figures = true;
+end
+if nargin < 5
+    script_dir = fileparts(mfilename('fullpath'));
+    output_folder = fullfile(script_dir, '..', 'logs', 'curve');
+end
+if save_figures && ~exist(output_folder, 'dir')
+    mkdir(output_folder);
 end
 
 % Add parent folder to path to access helper functions
@@ -458,14 +470,12 @@ end
 hold off;
 
 % Save figure
-output_folder = fullfile(base_folder, sprintf('%dpairs', pairs_number), 'fit');
-if ~exist(output_folder, 'dir')
-    mkdir(output_folder);
+if save_figures
+    fig_name = sprintf('bezier_control_points_set_%d_%dpairs', set_number, pairs_number);
+    print(fullfile(output_folder, [fig_name, '.png']), '-dpng', '-r300');
+    print(fullfile(output_folder, [fig_name, '.pdf']), '-dpdf', '-r300');
+    fprintf('Saved: %s (.png, .pdf)\n', fig_name);
 end
-output_filename = sprintf('bezier_control_points_set_%d_%dpairs.png', set_number, pairs_number);
-output_path = fullfile(output_folder, output_filename);
-print(output_path, '-dpng', '-r300');
-fprintf('Figure saved to: %s\n', output_path);
 
 end
 

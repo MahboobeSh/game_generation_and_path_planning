@@ -10,14 +10,11 @@ function list_games_by_path_length()
     % Usage:
     %   list_games_by_path_length()
     
-    % Base folder for games
-    base_folder = '/home/mahboobe/Desktop/game_generation_and_path_planning/new_games/selected_games_2';
-    base_folder = '/home/mahboobe/Desktop/study_information/game_sets_data/';
-    % base_folder = 'C:\Users\mahbo\OneDrive - University of Calgary\code\game_creation_and_fits\new_games\selected_games'
+    % Base folder for games - updated for Windows
+    base_folder = 'C:\Users\Mahboobe\OneDrive - University of Calgary\code\game_creation_and_fits\new_games\new_games';
     
-    % Folders to scan
+    % Folders to scan (files are directly in these folders, not in 'fit' subfolder)
     folders_to_scan = {'3pairs/fit', '4pairs/fit', '5pairs/fit'};
-    folders_to_scan = {'solved_games'}
     % Storage for all game data
     all_games = struct('name', {}, 'pairs', {}, 'set_number', {}, 'path_length', {}, 'file_path', {});
     
@@ -62,10 +59,9 @@ function list_games_by_path_length()
                     set_number = NaN;
                 end
                 
-                % Get path (prefer curve over path)
-                if isfield(data, 'curve_equalized') && ~isempty(data.curve)
+                % Get path (prefer curve_equalized over curve over path)
+                if isfield(data, 'curve_equalized') && ~isempty(data.curve_equalized)
                     path_to_use = data.curve_equalized;
-                    disp("here")
                 elseif isfield(data, 'curve') && ~isempty(data.curve)
                     path_to_use = data.curve;
                 elseif isfield(data, 'path') && ~isempty(data.path)

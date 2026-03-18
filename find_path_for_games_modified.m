@@ -22,14 +22,15 @@ for k = [0]
     m =4;
 
     % Load the data from the .mat file
-    set_number = k;
-    pairs_number =0;
+    set_number = 69;
+    pairs_number =4;
     % base_folder = 'C:\Users\mahbo\OneDrive - University of Calgary\code\game_creation_and_fits';
     base_folder = '/home/mahboobe/Desktop/game_generation_and_path_planning/game/';
     base_folder = '/home/mahboobe/Desktop/game_generation_and_path_planning/selected_games/';
     base_folder = '/home/mahboobe/Desktop/game_generation_and_path_planning/new_games/final_games';
     base_folder = '/home/mahboobe/Desktop/study_information/game_sets_data/raw_final_games';
-    %base_folder = '/home/mahboobe/Desktop/game_generation_and_path_planning/new_games/new_games/';
+    base_folder =  'C:\Users\mahboobe\OneDrive - University of Calgary\code\game_creation_and_fits\new_games\new_games';
+    base_folder = 'C:\Users\Mahboobe\OneDrive - University of Calgary\code\game_creation_and_fits\new_games\new_games'
     % base_folder='C:\Users\mahbo\OneDrive - University of Calgary\code\game_creation_and_fits\new_games\selected_games\';
     pairs_folder = fullfile(base_folder, sprintf('%dpairs', pairs_number));
     set_name = sprintf('set_%d_%dpairs.mat', set_number, pairs_number);
@@ -135,8 +136,8 @@ d_lb_in = ones(num_segments+1, 1) * min_d;
 phi_ub_in = pi * ones(num_segments+1, 1);
 phi_lb_in = -pi * ones(num_segments+1, 1);
 
-n_d = 3;
-n_phi = 2;
+n_d = 2;
+n_phi = 1;
 limit_factor = 1;
 
 

@@ -582,3 +582,4 @@ fprintf('\n');
 
 disp(mahboobe)
 end
+disp(counter_4)

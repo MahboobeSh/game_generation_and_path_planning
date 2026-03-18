@@ -53,7 +53,7 @@ function visualize_rehab_metrics(set_numbers, pairs_numbers, comparison_mode)
     end
     
     base_path = 'C:\Users\Mahboobe\OneDrive - University of Calgary\code\game_creation_and_fits\new_games\new_games\';
-    base_path = '/home/mahboobe/Desktop/game_generation_and_path_planning/new_games/selected_games_2';
+    base_path = 'C:\Users\Mahboobe\OneDrive - University of Calgary\code\game_creation_and_fits\new_games\new_games';
     
     fprintf('\n========================================\n');
     fprintf('REHABILITATION METRICS VISUALIZATION\n');
